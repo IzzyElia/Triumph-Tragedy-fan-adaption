@@ -1,0 +1,17 @@
+{
+    "name": "GameBoard",
+    "rootNamespace": "",
+    "references": [
+        "GUID:862c77582115d4c21adff87e6d8dee54",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
