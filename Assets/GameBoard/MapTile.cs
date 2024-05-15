@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using TMPro;
-using UnityEngine;
 using TriangleNet.Geometry;
-using TriangleNet.Meshing;
-using TriangleNet.Meshing.Algorithm;
-using UnityEngine.Events;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;
 
 namespace GameBoard
 {
@@ -43,10 +42,14 @@ namespace GameBoard
         [SerializeField] private MeshRenderer meshRenderer;
         [SerializeField] private TextMeshPro cityTextTMP;
 
-        public Mesh Mesh => meshFilter.sharedMesh;
+        public Mesh Mesh
+        {
+            get => meshFilter.sharedMesh;
+            set => meshFilter.sharedMesh = value;
+        } 
         public List<MapTile> connectedSpaces;
         public List<BorderReference> connectedBorders;
-        public Country country;
+        [FormerlySerializedAs("country")] public MapCountry mapCountry;
         [SerializeField] private GameObject cityIcon;
         [SerializeField] private GameObject cityText;
         [SerializeField] private GameObject resourceMarker;
@@ -62,10 +65,12 @@ namespace GameBoard
         [SerializeField] [HideInInspector] private Vector3 lastCalculatedObjectPosition = Vector3.negativeInfinity;
         [SerializeField] public Vector3 holeMarker;
         public bool containsHole { get; private set; }
-        
+        string MeshSavePath => $"Assets/Resources/{name}.mesh";
+        string MeshLoadPath => $"{name}";
+
         private void OnEnable()
         {
-            meshFilter.sharedMesh = new Mesh();
+            meshFilter.sharedMesh = null;
         }
         
         private void OnDisable()
@@ -76,14 +81,50 @@ namespace GameBoard
 
         public void Recalculate()
         {
-            RecalculateMesh();
+            if (_map != null)
+                meshFilter.sharedMesh = _map.fallbackMapTileMesh;
+            if (markComplete)
+            {
+                SetMeshToFlashed();
+            }
+            else
+            {
+                meshFilter.sharedMesh = RecalculateMesh();
+
+            }
+            
+            // TODO TEMP Set a random test color
+            Random.InitState(name.GetHashCode());
+            Color color = new Color(Random.value, Random.value, Random.value);
+
+            if (terrainType == TerrainType.Sea)
+            {
+                color = (color + Color.cyan*2) / 3f;
+            }
+            if (terrainType == TerrainType.Ocean)
+            {
+                color = (color + Color.blue*2) / 3f;
+            }
+            if (terrainType == TerrainType.NotInPlay)
+            {
+                color = (color + Color.magenta*2) / 3f;
+            }
+            if (terrainType == TerrainType.Land)
+            {
+                color = (color + new Color(0.5f, 0.2f, 0.2f)*2) / 3f;
+            }
+
+            meshRenderer.sharedMaterial.color = color;
+            //if (!markComplete)
+            //    AutoReorderBorders();
         }
         
         private void OnValidate()
         {
-            Recalculate();
+            //Recalculate();
         }
 
+        
         public (Vector3[], Vector3[]) GetVertices() //main vertices, hole/island
         {
             List<Vector3> vertices = new List<Vector3>();
@@ -118,15 +159,11 @@ namespace GameBoard
 
             return (vertices.ToArray(), hole.ToArray());
         }
-
-        // Just generate a simple circle of size 1 for now
-        public void RecalculateMesh()
+        
+        public Mesh RecalculateMesh()
         {
-            
-            
             (Vector3[] vertices, Vector3[] holeVertices) = GetVertices();
             containsHole = holeVertices.Length >= 3;
-        
             if (vertices.Length >= 3)
             {
                 string triangulationMethod = "ear clipping";
@@ -202,27 +239,153 @@ namespace GameBoard
 
                 try
                 {
-                    Mesh.vertices = vertices;
-                    Mesh.triangles = triangles;
-                    RecalculateMeshValues();
+                    Mesh mesh = new Mesh();
+                    mesh.vertices = vertices;
+                    mesh.triangles = triangles;
+                    mesh.RecalculateNormals();
+                    mesh.RecalculateBounds();
+                    mesh.RecalculateTangents();
+                    Debug.Log($"Calculated mesh for {gameObject.name} in {stopwatch.ElapsedTicks} ticks using {triangulationMethod}");
+                    return mesh;
                 }
                 catch (Exception e)
                 {
                     Debug.LogWarning($"Unable to calculate mesh for {gameObject.name}");
                     throw;
                 }
-
-                
-                Debug.Log($"Calculated mesh for {gameObject.name} in {stopwatch.ElapsedTicks} ticks using {triangulationMethod}");
+            }
+            else
+            {
+                return null;
             }
         }
 
-
-        private void RecalculateMeshValues()
+        /// <summary>
+        /// Save the mesh and set it in the inspector
+        /// </summary>
+        public void FlashMesh()
         {
-            Mesh.RecalculateNormals();
-            Mesh.RecalculateBounds();
-            Mesh.RecalculateTangents();
+            if (markComplete) UnflashMesh();
+            Mesh mesh = RecalculateMesh();
+            AssetDatabase.CreateAsset(mesh, MeshSavePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();  
+            markComplete = SetMeshToFlashed();
+        }
+
+        public bool SetMeshToFlashed()
+        {
+            UnityEngine.Mesh loadedMesh = Resources.Load<Mesh>(MeshLoadPath);
+            if (loadedMesh != null)
+            {
+                SerializedObject serializedObject = new SerializedObject(meshFilter);
+                SerializedProperty meshProperty = serializedObject.FindProperty("m_Mesh");
+                meshProperty.objectReferenceValue = loadedMesh;
+                serializedObject.ApplyModifiedProperties();
+                
+                EditorUtility.SetDirty(this);
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning($"Unable to load mesh for {name}. Unflashing...");
+                UnflashMesh();
+                return false;
+            }
+        }
+
+        public void UnflashMesh()
+        {
+            markComplete = false;
+            meshFilter.sharedMesh = null;
+            AssetDatabase.DeleteAsset(MeshSavePath);
+            AssetDatabase.Refresh();
+        }
+
+        public void AutoReorderBorders()
+        {
+            // Calculate the center of all points
+            Vector3 center = Vector3.zero;
+            int totalPoints = 0;
+        
+            for (int i = 0; i < connectedBorders.Count; i++)
+            {
+                BorderReference borderRef = connectedBorders[i];
+                totalPoints += borderRef.border.points.Length;
+                for (int j = 0; j < borderRef.border.points.Length; j++)
+                {
+                    center += borderRef.border.points[j];
+                }
+            }
+            center /= totalPoints;
+            connectedBorders.Sort((a, b) =>
+            {
+                Vector3 aOther;
+                Vector3 bOther;
+                if (a.border.points.Length == 2) {
+                    aOther = a.border.connectedMapTiles[0] == this
+                    ? a.border.connectedMapTiles[1].transform.position
+                    : a.border.connectedMapTiles[0].transform.position;
+                }
+                else
+                {
+                    aOther = a.border.transform.position;
+                }
+
+                if (b.border.points.Length == 2)
+                {
+                    bOther = b.border.connectedMapTiles[0] == this
+                        ? b.border.connectedMapTiles[1].transform.position
+                        : b.border.connectedMapTiles[0].transform.position;
+                }
+                else
+                {
+                    bOther = b.border.transform.position;
+                }
+
+                Vector3 aDir = aOther - center;
+                Vector3 bDir = bOther - center;
+                float aAngle = Mathf.Atan2(aDir.y, aDir.x);
+                float bAngle = Mathf.Atan2(bDir.y, bDir.x);
+                return aAngle.CompareTo(bAngle);
+            });
+            //Then, reverse the vertex order of any border where the last point is counterclockwise compared to the first, again calculated using the mesh center
+            for (int i = 0; i < connectedBorders.Count; i++)
+            {
+                BorderReference borderRef = connectedBorders[i];
+                if (borderRef.border.points.Length == 0)
+                {
+                    Debug.LogWarning($"{borderRef.border.name} has a length of zero");
+                    continue;
+                }
+                Vector3 firstPoint = borderRef.border.points[0];
+                Vector3 lastPoint = borderRef.border.points[^1];
+                Vector3 firstDir = firstPoint - center;
+                Vector3 lastDir = lastPoint - center;
+                float firstAngle = Mathf.Atan2(firstDir.y, firstDir.x);
+                float lastAngle = Mathf.Atan2(lastDir.y, lastDir.x);
+                // Normalize angles to range [0, 2 * Mathf.PI]
+                firstAngle = (firstAngle < 0) ? firstAngle + 2 * Mathf.PI : firstAngle;
+                lastAngle = (lastAngle < 0) ? lastAngle + 2 * Mathf.PI : lastAngle;
+
+                float angleDifference = lastAngle - firstAngle;
+                if (angleDifference < 0)
+                {
+                    angleDifference += 2 * Mathf.PI;
+                }
+
+                if (angleDifference > Mathf.PI)
+                {
+                    borderRef.reverseVertexOrder = true;
+                }
+                else
+                {
+                    borderRef.reverseVertexOrder = false;
+                }
+            }
+            
+            
+            Recalculate();
         }
 
         public void RecalculateAppearance()
@@ -235,7 +398,7 @@ namespace GameBoard
 
             if (terrainType == TerrainType.Land)
             {
-                meshRenderer.material.SetColor("_BaseColor", country.color);
+                meshRenderer.material.SetColor("_BaseColor", mapCountry.color);
             }
             else if (terrainType == TerrainType.NotInPlay)
             {

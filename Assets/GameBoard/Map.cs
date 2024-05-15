@@ -11,12 +11,27 @@ namespace GameBoard
     {
         private Dictionary<string, MapBorder> _mapBorders = new Dictionary<string, MapBorder>();
         private Dictionary<string, MapTile> _mapSpaces = new Dictionary<string, MapTile>();
-        private Dictionary<string, Country> _countries = new Dictionary<string, Country>();
+        private Dictionary<string, MapCountry> _countries = new Dictionary<string, MapCountry>();
         public GameObject mapBorderWrapper;
         public GameObject countriesWrapper;
         private bool _fullRecalculationCalled = false;
         private bool _bordersRecalculationCalled = false;
         private bool _appearanceRecalculationCalled = false;
+        public Mesh fallbackMapTileMesh;
+
+        public MapTile GetTileByName(string name)
+        {
+            try
+            {
+                return _mapSpaces[name];
+
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"No MapTile by name {name}");
+                return null;
+            }
+        }
 
         private void OnEnable()
         {
@@ -37,7 +52,7 @@ namespace GameBoard
                 _mapSpaces.Clear();
                 _countries.Clear();
                 MapBorder[] mapBorders = mapBorderWrapper.GetComponentsInChildren<MapBorder>();
-                Country[] countries = countriesWrapper.GetComponentsInChildren<Country>();
+                MapCountry[] countries = countriesWrapper.GetComponentsInChildren<MapCountry>();
                 MapTile[] mapSpaces = countriesWrapper.GetComponentsInChildren<MapTile>();
 
                 foreach (var border in mapBorders)
@@ -49,10 +64,10 @@ namespace GameBoard
             
                 foreach (var mapSpace in mapSpaces)
                 {
-                    if (mapSpace.TryGetComponent<Country>(out Country country))
-                        mapSpace.country = country;
+                    if (mapSpace.TryGetComponent<MapCountry>(out MapCountry country))
+                        mapSpace.mapCountry = country;
                     else
-                        mapSpace.country = null;
+                        mapSpace.mapCountry = null;
                     mapSpace.Map = this;
                     mapSpace.Recalculate();
                     _mapSpaces.Add(mapSpace.gameObject.name, mapSpace);
@@ -143,6 +158,72 @@ namespace GameBoard
                     border.RecalculateAppearance();
                 }
             }
+
+            
+            if (_fullRecalculationCalled)
+            {
+                // TEMP - auto-set border types
+                foreach ((string borderName, MapBorder border) in _mapBorders)
+                {
+                    if (border.connectedMapTiles.Count != 2)
+                    {
+                        border.borderType = BorderType.Impassable;
+                        continue;
+                    }
+
+                    MapTile firstTile = border.connectedMapTiles[0];
+                    MapTile secondTile = border.connectedMapTiles[1];
+                    // Is it impassible?
+                    if (firstTile.terrainType == MapTile.TerrainType.NotInPlay ||
+                        secondTile.terrainType == MapTile.TerrainType.NotInPlay)
+                    {
+                        border.borderType = BorderType.Impassable;
+                        continue;
+                    }
+                    
+                    // Is it a strait?
+                    if (firstTile.terrainType == MapTile.TerrainType.Strait ||
+                        secondTile.terrainType == MapTile.TerrainType.Strait)
+                    {
+                        border.borderType = BorderType.Strait;
+                        continue;
+                    }
+                    
+                    // Is it water-to-water?
+                    if (
+                        (firstTile.terrainType == MapTile.TerrainType.Sea || firstTile.terrainType == MapTile.TerrainType.Ocean) &&
+                        (secondTile.terrainType == MapTile.TerrainType.Sea || secondTile.terrainType == MapTile.TerrainType.Ocean))
+                    {
+                        border.borderType = BorderType.Sea;
+                        continue;
+                    }
+                    
+                    // Is it a coast?
+                    if (
+                            (
+                                (firstTile.terrainType == MapTile.TerrainType.Sea || firstTile.terrainType == MapTile.TerrainType.Ocean) 
+                                &&
+                                (secondTile.terrainType != MapTile.TerrainType.Sea && secondTile.terrainType != MapTile.TerrainType.Ocean)
+                            )
+                            ||
+                            (
+                                (firstTile.terrainType != MapTile.TerrainType.Sea && firstTile.terrainType != MapTile.TerrainType.Ocean) 
+                                &&
+                                (secondTile.terrainType == MapTile.TerrainType.Sea || secondTile.terrainType == MapTile.TerrainType.Ocean)
+                                
+                            )
+                        )
+                    {
+                        border.borderType = BorderType.Coast;
+                        continue;
+                    }
+                    
+                    // It must be land. Leave it be
+                    continue;
+                }
+            }
+            
+            
 
             _fullRecalculationCalled = false;
             _bordersRecalculationCalled = false;

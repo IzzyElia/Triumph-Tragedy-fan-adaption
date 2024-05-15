@@ -24,6 +24,18 @@ namespace GameBoard.EditorUtilities
                 var rect = new Rect(Event.current.mousePosition, Vector2.zero);
                 PopupWindow.Show(rect, popup);
             }
+            if (GUILayout.Button("Flash"))
+            {
+                _mapTile.FlashMesh();
+            }
+            if (GUILayout.Button("Unflash"))
+            {
+                _mapTile.UnflashMesh();
+            }
+            if (GUILayout.Button("Sort Borders"))
+            {
+                _mapTile.AutoReorderBorders();
+            }
             // Add a custom button to the inspector
             if (GUILayout.Button("Recalculate Board Values"))
             {
@@ -39,12 +51,14 @@ namespace GameBoard.EditorUtilities
             if (_mapTile.transform.position != prevPosition)
             {
                 prevPosition = _mapTile.transform.position;
-                _mapTile.RecalculateMesh();
+                //_mapTile.RecalculateMesh();
             }
 
             (Vector3[] vertices, Vector3[] holeVertices) = _mapTile.GetVertices();
             for (int i = 0; i < vertices.Length; i++)
             {
+                float p = ((float)i) / vertices.Length;
+                Handles.color = new Color(p, 1-p, 1);
                 Vector3 vertex = vertices[i]; ;
                 float handleSize = HandleUtility.GetHandleSize(vertex) * 0.1f;
                 Handles.DrawSolidDisc(vertex, Vector3.back, handleSize);

@@ -1,6 +1,8 @@
 using System;
+using Codice.Utils;
 using UnityEditor;
 using UnityEngine;
+using TMPro;
 
 namespace GameBoard.EditorUtilities
 {
@@ -12,11 +14,20 @@ namespace GameBoard.EditorUtilities
         {
             // Draw the default inspector options
             DrawDefaultInspector();
-
-            // Add a custom button to the inspector
+            
             if (GUILayout.Button("Recalculate Board Values"))
             {
                 _map.RecalculateMapObjectLists();
+            }
+            
+            if (GUILayout.Button("Toggle Text"))
+            {
+                TextMeshPro[] texts = _map.countriesWrapper.GetComponentsInChildren<TextMeshPro>(includeInactive:true);
+                bool toggleOn = texts.Length > 0 && !texts[0].gameObject.activeSelf;
+                foreach (TextMeshPro text in texts)
+                {
+                    text.gameObject.SetActive(toggleOn);
+                }
             }
         }
 
@@ -40,7 +51,7 @@ namespace GameBoard.EditorUtilities
             {
                 if (border.connectedMapTiles.Count == 2)
                 {
-                    Handles.color = Color.red;
+                    Handles.color = new Color(0, 0f, 0);
                     Handles.DrawLine(
                         border.connectedMapTiles[0].transform.position, 
                         border.connectedMapTiles[1].transform.position
@@ -54,6 +65,7 @@ namespace GameBoard.EditorUtilities
                 }
             }
         }
+        
         private void OnSceneGUI()
         {
             DrawMapCompletion(_map);

@@ -159,7 +159,7 @@ MonoBehaviour:
   cityTextTMP: {fileID: 5244122404907601365}
   connectedSpaces: []
   connectedBorders: []
-  country: {fileID: 0}
+  mapCountry: {fileID: 0}
   cityIcon: {fileID: 2447675085115882525}
   cityText: {fileID: 4243240993370406014}
   resourceMarker: {fileID: 5046551706378104615}
@@ -168,7 +168,12 @@ MonoBehaviour:
   colonialResources: 0
   citySize: 0
   terrainType: 0
+  markFunctional: 0
+  markComplete: 0
   mapTextOverride: 0
+  lastCalculatedVertices: []
+  lastCalculatedObjectPosition: {x: -Infinity, y: -Infinity, z: -Infinity}
+  holeMarker: {x: 0, y: 0, z: 0}
 --- !u!1 &4243240993370406014
 GameObject:
   m_ObjectHideFlags: 0

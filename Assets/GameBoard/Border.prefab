@@ -46,9 +46,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Map: {fileID: 0}
   points: []
-  stealFirstVertexFrom: {fileID: 0}
-  firstStolenVertexId: 0
-  stealLastVertexFrom: {fileID: 0}
-  lastStolenVertexId: 0
-  numPoints: 0
+  prevNumPoints: 0
   connectedMapTiles: []
+  borderType: 0
+  shareFirstVertex:
+    enabled: 0
+    target: {fileID: 0}
+    targetFirstVertex: 0
+  shareLastVertex:
+    enabled: 0
+    target: {fileID: 0}
+    targetFirstVertex: 0
