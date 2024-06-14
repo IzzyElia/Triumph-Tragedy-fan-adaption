@@ -1,90 +1,100 @@
 using System;
-using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
-using GameBoard;
+using UnityEngine;
 
-public class MapTileEditorList : EditorWindow
+namespace GameBoard.EditorUtilities
 {
-    private static Map _map;
-    private Vector2 scrollPosition;
-
-    private void OnEnable()
+    public class MapTileEditorList : EditorWindow
     {
-        _map = GameObject.Find("Map")?.GetComponent<Map>();
+        private static Map _map;
+        private Vector2 scrollPosition;
 
-    }
-
-    [MenuItem("Window/Custom Object List")]
-    public static void ShowWindow()
-    {
-        _map = GameObject.Find("Map")?.GetComponent<Map>();
-        if (_map != null)
-            GetWindow<MapTileEditorList>("Map Tiles");
-    }
-
-    private void OnGUI()
-    {
-        if (_map == null)
+        private void OnEnable()
         {
-            Close();
-            return;
+            _map = GameObject.Find("Map")?.GetComponent<Map>();
+
         }
-        GUILayout.Label("Map Tiles", EditorStyles.boldLabel);
-        if (GUILayout.Button("Toggle Background"))
+
+        [MenuItem("Window/Custom Object List")]
+        public static void ShowWindow()
         {
-            SpriteRenderer spriteRenderer = _map.GetComponent<SpriteRenderer>();
-            spriteRenderer.enabled = !spriteRenderer.enabled;
+            _map = GameObject.Find("Map")?.GetComponent<Map>();
+            if (_map != null)
+                GetWindow<MapTileEditorList>("Map Tiles");
         }
-        GUILayout.Space(15);
 
-        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-
-        MapTile[] tiles = _map.countriesWrapper.GetComponentsInChildren<MapTile>();
-        Array.Sort(tiles, (a, b) => a.transform.position.y.CompareTo(b.transform.position.y));
-
-        foreach (MapTile mapTile in tiles)
+        private void OnGUI()
         {
-            GUILayout.BeginHorizontal();
-
-            Color color = mapTile.markComplete ? Color.green : Color.red;
-            // Draw the color box
-            EditorGUI.DrawRect(GUILayoutUtility.GetRect(5, 20), color);
-
-            // Display the object name with clickable label
-            if (GUILayout.Button(mapTile.name, EditorStyles.label))
+            if (_map == null)
             {
-                SelectObject(mapTile.gameObject);
-                Selection.activeObject = mapTile.gameObject;
-                SceneView.FrameLastActiveSceneView();
+                Close();
+                return;
             }
+            MapTile[] tiles = _map.countriesWrapper.GetComponentsInChildren<MapTile>();
+            Array.Sort(tiles, (a, b) => a.transform.position.y.CompareTo(b.transform.position.y));
 
-            // Button 1
-            if (GUILayout.Button("Sort", GUILayout.Width(75)))
-            {
-                mapTile.AutoReorderBorders();
-            }
             
-            if (GUILayout.Button("Flash", GUILayout.Width(75)))
+            GUILayout.Label("Map Tiles", EditorStyles.boldLabel);
+            if (GUILayout.Button("Toggle Background"))
             {
-                mapTile.FlashMesh();
+                SpriteRenderer spriteRenderer = _map.GetComponent<SpriteRenderer>();
+                spriteRenderer.enabled = !spriteRenderer.enabled;
+            }
+            if (GUILayout.Button("Reflash All"))
+            {
+                foreach (MapTile mapTile in tiles)
+                {
+                    mapTile.UnflashMesh();
+                    mapTile.FlashMesh();
+                }
+            }
+            GUILayout.Space(15);
+
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            
+            foreach (MapTile mapTile in tiles)
+            {
+                GUILayout.BeginHorizontal();
+
+                Color color = mapTile.markComplete ? Color.green : Color.red;
+                // Draw the color box
+                EditorGUI.DrawRect(GUILayoutUtility.GetRect(5, 20), color);
+
+                // Display the object name with clickable label
+                if (GUILayout.Button(mapTile.name, EditorStyles.label))
+                {
+                    SelectObject(mapTile.gameObject);
+                    Selection.activeObject = mapTile.gameObject;
+                    SceneView.FrameLastActiveSceneView();
+                }
+
+                // Button 1
+                if (GUILayout.Button("Sort", GUILayout.Width(75)))
+                {
+                    mapTile.AutoReorderBorders();
+                }
+            
+                if (GUILayout.Button("Flash", GUILayout.Width(75)))
+                {
+                    mapTile.FlashMesh();
+                }
+
+                // Button 2
+                if (GUILayout.Button("Unflash", GUILayout.Width(75)))
+                {
+                    mapTile.UnflashMesh();
+                }
+
+                GUILayout.EndHorizontal();
             }
 
-            // Button 2
-            if (GUILayout.Button("Unflash", GUILayout.Width(75)))
-            {
-                mapTile.UnflashMesh();
-            }
-
-            GUILayout.EndHorizontal();
+            EditorGUILayout.EndScrollView();
         }
 
-        EditorGUILayout.EndScrollView();
-    }
-
-    private void SelectObject(GameObject obj)
-    {
-        Selection.activeObject = obj;
-        EditorGUIUtility.PingObject(obj);
+        private void SelectObject(GameObject obj)
+        {
+            Selection.activeObject = obj;
+            EditorGUIUtility.PingObject(obj);
+        }
     }
 }

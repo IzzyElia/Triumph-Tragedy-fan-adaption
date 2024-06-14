@@ -39,7 +39,7 @@ namespace GameBoard.EditorUtilities
             // Add a custom button to the inspector
             if (GUILayout.Button("Recalculate Board Values"))
             {
-                _mapTile.Map.RecalculateMapObjectLists();
+                _mapTile.Map.FullyRecalculate();
             }
         }
         private void OnSceneGUI()

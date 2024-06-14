@@ -39,24 +39,33 @@ namespace GameBoard.EditorUtilities
             // Add a custom button to the inspector
             if (GUILayout.Button("Recalculate Board Values"))
             {
-                _border.Map.RecalculateMapObjectLists();
+                _border.Map.FullyRecalculate();
             }
         }
 
         private void OnSceneGUI()
         {
             CheckAddPoint();
-            Vector3[] vertices = _border.points;
-            Handles.DrawPolyLine(vertices);
-            for (int i = 0; i < vertices.Length; i++)
+            Vector3[] points = _border.points;
+            Handles.DrawPolyLine(points);
+            for (int i = 0; i < points.Length; i++)
             {
-                Vector3 oldPosition = vertices[i];
+                Vector3 oldPosition = points[i];
                 Vector3 newPosition = Handles.FreeMoveHandle(oldPosition, HandleUtility.GetHandleSize(oldPosition) * 0.2f, Vector3.one * 0.02f, Handles.CylinderHandleCap);
                 Handles.Label(oldPosition, i.ToString(), style);
                 if (newPosition != oldPosition)
                 {
                     _border.MoveVertex(i, new Vector3(newPosition.x, newPosition.y, 0));
-                    Debug.Log("Moving vertex by handle...");
+                }
+            }
+
+            MeshFilter meshFilter = _border.GetComponent<MeshFilter>();
+            if (meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                Vector3[] vertices = meshFilter.sharedMesh.vertices;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Handles.DrawSolidDisc(vertices[i], Vector3.back, 0.05f);
                 }
             }
         }

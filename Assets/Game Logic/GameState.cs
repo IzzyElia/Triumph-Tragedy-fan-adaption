@@ -1,23 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using GameBoard;
 using Unity.Collections;
 using UnityEngine;
 using System.Reflection;
+using Game_Logic;
+using GameBoard.UI;
+using GameSharedInterfaces;
 
 namespace GameLogic
 {
-    public class GameState
+    public abstract class GameState : IGameState
     {
         static GameState()
         {
             AssignTypeIDs();
         }
-        private const byte GameEntityUpdateHeader = 2;
-        private const byte AmendEntitiesMapHeader = 1;
-        private const byte InitResyncHeader = 0;
-        private const byte EndResyncHeader = 4;
+        
+        public const byte AmendEntitiesMapHeader = 99;
+        public const byte InitResyncHeader = 0;
+        public const byte GameEntityUpdateHeader = 2;
+        public const byte GameStateUpdateHeader = 3;
+        public const byte EndResyncHeader = 4;
         
         private Dictionary<Type, GameEntity[]> _entitiesMap = new();
         public int EntitiesMapHash
@@ -34,13 +40,131 @@ namespace GameLogic
             }
         }
         public UnityNetworkMember NetworkMember;
-        public Map MapRenderer;
-
-        public GameState(UnityNetworkMember networkMember)
+        public bool HasStartedInitialSync { get; private set; } = false;
+        public IReadOnlyCollection<int> Players
         {
-            NetworkMember = networkMember;
-            RegisterEntityType<GameTile>(256);
+            get
+            {
+                UnityServer server = NetworkMember as UnityServer;
+                if (server == null) throw new InvalidOperationException("Iterating over players supported serverside (right now)");
+                return server.FilledPlayerSlots;
+            }
         }
+
+
+        private int _playerCount = -1;
+
+        public int PlayerCount
+        {
+            get => _playerCount;
+            protected set
+            {
+                _playerCount = value;
+            }
+        }
+
+        public string MapName;
+        public string RulesetName;
+        public bool IsServer => NetworkMember is UnityServer;
+        public Map MapRenderer;
+        public IRuleset Ruleset { get; set; }
+        public UIController UIController;
+        /// <summary>
+        /// Flags that the gamestate is a clientside gamestate being resynced
+        /// </summary>
+        public bool IsBeingResynced { get; private set; } = false;
+
+        public bool IsSynced { get; private set; } = false;
+        public bool IsWaitingOnNetworkReply => NetworkMember.WaitingOnReply;
+
+        public int iPlayer => IsServer ? -1 : ((UnityClient)NetworkMember).PlayerSlot; // The player the gamestate is for
+        public abstract int ActivePlayer { get; }
+        public abstract bool IsWaitingOnPlayer(int iPlayer);
+
+
+        public GameState()
+        {
+        }
+
+        /// <summary>
+        /// Fully refresh the map renderer from scratch
+        /// </summary>
+        protected abstract void FullyRefreshMapRenderer();
+        public abstract void CalculateDerivedTileAndBorderValues(Map map);
+        public abstract void ReceiveGameStateUpdate(ref DataStreamReader incomingMessage);
+        protected DataStreamWriter StartGameStateUpdate(int targetPlayer)
+        {
+            try
+            {
+                UnityServer server = (UnityServer)NetworkMember;
+                server.CreateNewGameStateMessage(targetPlayer, out DataStreamWriter message);
+                message.WriteByte(GameStateUpdateHeader);
+                return message;
+            }
+            catch (InvalidCastException e)
+            {
+                throw new InvalidOperationException("GameState is clientside");
+            }
+        }
+        protected void PushGameStateUpdate(ref DataStreamWriter outgoingMessage, int targetPlayer)
+        {
+            try
+            {
+                UnityServer server = (UnityServer)NetworkMember;
+                server.PushMessage(ref outgoingMessage, targetPlayer);
+            }
+            catch (InvalidCastException e)
+            {
+                throw new InvalidOperationException("GameState is clientside");
+            }
+        }
+
+        public DataStreamWriter CreateEntityUpdateMessage(int targetPlayer, Type type, int id)
+        {
+            UnityServer server = NetworkMember as UnityServer;
+            if (server == null)
+            {
+                Debug.LogError("Is a clientside GameState");
+                return default;
+            }
+            
+            server.CreateNewGameStateMessage(targetPlayer, out DataStreamWriter outgoingMessage);
+            outgoingMessage.WriteByte(GameEntityUpdateHeader);
+            outgoingMessage.WriteByte(GetTypeID(type));
+            outgoingMessage.WriteInt(id);
+            return outgoingMessage;
+        }
+
+
+        public void StartGame()
+        {
+            if (!IsServer) throw new InvalidOperationException("GameState.StartGame() is used to initialize the game serverside. It should not be called by clients");
+            Debug.Log($"Starting game with {PlayerCount} players");
+            OnGameStart();
+        }
+        /// <summary>
+        /// Called on the server side when starting the game
+        /// </summary>
+        public abstract void OnGameStart();
+        /// <summary>
+        /// Called on the client side after the entities map has been recreated but before any of their values have been retrieved
+        /// </summary>
+        protected abstract void OnSyncStarted();
+
+        public void SetUIActive(bool active)
+        {
+            UIController.ActiveLocally = active;
+        }
+        public bool IsPlayerSyncedOrBeingResynced(int iPlayer)
+        {
+            if (NetworkMember is UnityServer server)
+            {
+                return server.IsPlayerSyncedOrBeingResynced(iPlayer);
+            }
+
+            throw new InvalidOperationException("Can only be called by the server");
+        }
+
         
         // SETUP METHODS
         /// <summary>
@@ -51,77 +175,96 @@ namespace GameLogic
         {
             _entitiesMap.Add(typeof(T), new GameEntity[cap]);
         }
-
-        public void SendSync(int targetPlayer)
+        
+        /// <returns>A collection of entities that need to be sync'd</returns>
+        public Queue<GameEntity> StartSync(int targetPlayer)
         {
             Debug.Log($"Sending full sync to player #{targetPlayer}");
+            if (PlayerCount == -1) Debug.LogError("PlayerCount not set");
             UnityServer server = NetworkMember as UnityServer;
             if (server == null)
             {
                 Debug.Log("Is a clientside GameState");
-                return;
+                return null;
             }
-            DataStreamWriter message = server.CreateNewGameStateMessage(targetPlayer);
+            server.CreateNewGameStateMessage(targetPlayer, out DataStreamWriter message);
             message.WriteByte(InitResyncHeader);
+            message.WriteInt(PlayerCount);
+            message.WriteInt(_entitiesMap.Count);
             foreach ((Type type, GameEntity[] entities) in _entitiesMap)
             {
-                message.WriteByte(AmendEntitiesMapHeader);
-                
-                message.WriteByte(GetTypeID(type));
+                message.WriteByte(GetTypeID(type)); 
                 message.WriteInt(entities.Length);
             }
 
-            message.WriteByte(EndResyncHeader);
             message.WriteInt(EntitiesMapHash);
-            server.PushMessage(message);
+            server.PushMessage(ref message, targetPlayer);
+            
+            OnSendingSync(targetPlayer);
 
+            Queue<GameEntity> allEntities = new Queue<GameEntity>();
             foreach ((Type type, GameEntity[] entities) in _entitiesMap)
             {
                 foreach (GameEntity entity in entities)
                 {
-                    entity.PushFullState(targetPlayer);
+                    if (entity != null)
+                        allEntities.Enqueue(entity);
                 }
             }
-            
-        }
 
-        public DataStreamWriter CreateEntityUpdateMessage(int targetPlayer, Type type, int id)
+            return allEntities;
+        }
+        public abstract void OnSendingSync(int targetPlayer);
+
+        public List<ICard> GetCardsInHand(int player)
         {
-            UnityServer server = NetworkMember as UnityServer;
-            if (server == null)
+            List<ICard> cards = new List<ICard>();
+            GameCard[] allCards = GameCard.GetAllCards(this);
+            for (int i = 0; i < allCards.Length; i++)
             {
-                Debug.Log("Is a clientside GameState");
-                return default;
+                if (allCards[i].HoldingPlayer == player) cards.Add(allCards[i]);
             }
 
-            DataStreamWriter outgoingMessage = server.CreateNewGameStateMessage(targetPlayer);
-            outgoingMessage.WriteByte(GameEntityUpdateHeader);
-            outgoingMessage.WriteByte(GetTypeID(type));
-            outgoingMessage.WriteInt(id);
-            return outgoingMessage;
+            return cards;
         }
 
-        public void ReceiveAndRouteMessage(DataStreamReader message)
+        
+        public void ReceiveAndRouteMessage(ref DataStreamReader message)
         {
             byte header = message.ReadByte();
 
             switch (header)
             {
+                case EndResyncHeader:
+                    NetworkMember.NetworkingLog($"finishing resync");
+                    IsBeingResynced = false;
+                    IsSynced = true;
+                    CalculateDerivedTileAndBorderValues(MapRenderer);
+                    FullyRefreshMapRenderer();
+                    UIController.UnresolvedStateChange = true;
+                    UIController.UnresolvedResync = true;
+                    break;
                 case InitResyncHeader:
-                    // Recieve resync
+                    NetworkMember.NetworkingLog($"starting resync");
                     _entitiesMap.Clear();
-                    while (message.ReadByte() == AmendEntitiesMapHeader)
+                    IsBeingResynced = true;
+                    IsSynced = false;
+                    HasStartedInitialSync = true;
+                    PlayerCount = message.ReadInt();
+                    int numEntityTypes = message.ReadInt();
+                    for (int i = 0; i < numEntityTypes; i++)
                     {
-                        ReadAndApplyType(message);
+                        ReadAndApplyType(ref message);
                     }
 
                     int expectedEntitiesMapHash = message.ReadInt();
-                    Debug.Log($"{expectedEntitiesMapHash} <-> {EntitiesMapHash}");
+                    NetworkMember.NetworkingLog($"Hashes match - {expectedEntitiesMapHash} <-> {EntitiesMapHash}", DebuggingLevel.Always);
                     if (EntitiesMapHash != expectedEntitiesMapHash)
                     {
                         Debug.LogWarning("Sync failed. Disconnecting");
                         NetworkMember.Dispose();
                     }
+                    OnSyncStarted();
                     // The rest of the resync will come on its own later in the form of individual entity updates
                     break;
 
@@ -141,16 +284,23 @@ namespace GameLogic
                     }
 
                     GameEntity entity = GetOrCreateEntity(type, id);
-                    entity.ReceiveUpdate(message);
+                    entity.ReceiveUpdate(ref message);
+                    UIController.UnresolvedStateChange = true;
+                    break;
+                case GameStateUpdateHeader:
+                    // Only accept game state updates if the initial sync has been started. Otherwise, discard them
+                    if (HasStartedInitialSync) ReceiveGameStateUpdate(ref message);
+                    else Debug.LogWarning("Client received game state data despite not having begun a sync");
+                    UIController.UnresolvedStateChange = true;
                     break;
             }
         }
 
+        public T GetEntity<T>(int id) where T : GameEntity => (T)GetEntity(typeof(T), id);
         /// <summary>
-        /// Gets the entity of the specified type with the specified ID, creating a new one if
-        /// it doesn't exist.
+        /// Gets the entity of the specified type with the specified ID, returning null if it does not exist
         /// </summary>
-        public GameEntity GetOrCreateEntity(Type entityType, int id)
+        public GameEntity GetEntity(Type entityType, int id)
         {
             if (_entitiesMap.TryGetValue(entityType, out GameEntity[] entities))
             {
@@ -159,15 +309,37 @@ namespace GameLogic
                     return entities[id];
                 }
             }
-            else
-            {
-                GameEntity entity = GameEntity.Create(entityType, this);
-                _entitiesMap[entityType][id] = entity;
-            }
+
             return null;
         }
-
-        void ReadAndApplyType(DataStreamReader message)
+        public T GetOrCreateEntity<T>(int id) where T : GameEntity => (T)GetOrCreateEntity(typeof(T), id);
+        /// <summary>
+        /// Gets the entity of the specified type with the specified ID, creating a new one if
+        /// it doesn't exist.
+        /// </summary>
+        public GameEntity GetOrCreateEntity(Type entityType, int id)
+        {
+            GameEntity[] entities = _entitiesMap[entityType];
+            if (id >= 0 && id < entities.Length)
+            {
+                if (entities[id] == null)
+                {
+                    GameEntity entity = GameEntity.Create(entityType, this);
+                    _entitiesMap[entityType][id] = entity;
+                    entity.ID = id;
+                    return entity;
+                }
+                else
+                {
+                    return entities[id];
+                }
+            }
+            else
+            {
+                throw new ArgumentException("ID not within the valid range for the entity type");
+            }
+        }
+        void ReadAndApplyType(ref DataStreamReader message)
         {
             byte typeId = message.ReadByte();
             int size = message.ReadInt();
@@ -181,7 +353,73 @@ namespace GameLogic
                 gameEntity.GameState = this;
                 _entitiesMap[type][i] = gameEntity;
             }
-            Debug.Log($"Applying type {type.Name}");
+        }
+
+        public GameEntity[] GetEntitiesOfType(Type type)
+        {
+            return _entitiesMap[type];
+        }
+        public T[] GetEntitiesOfType<T>() where T : GameEntity
+        {
+            GameEntity[] entities = _entitiesMap[typeof(T)];
+            T[] t = new T[entities.Length];
+            for (int i = 0; i < t.Length; i++)
+            {
+                t[i] = (T)entities[i];
+            }
+            return t;
+        }
+
+        public List<GameEntity> GetAllEntities()
+        {
+            List<GameEntity> allEntities = new List<GameEntity>();
+            foreach ((Type type, GameEntity[] entities) in _entitiesMap)
+            {
+                foreach (GameEntity entity in entities)
+                {
+                    if (entity != null) allEntities.Add(entity);
+                }
+            }
+
+            return allEntities;
+        }
+
+        public int MaxEntityID(Type type)
+        {
+            return _entitiesMap[type].Length;
+        }
+
+        public int MaxEntityID<T>() => MaxEntityID(typeof(T));
+
+        private const bool LogHashInfo = false;
+        public int GetStateHash(int asPlayer, string debuggingFile = "HashLog.txt")
+        {
+            int hash = 17;
+            StreamWriter fileStream;
+            if (LogHashInfo) fileStream = new StreamWriter(Application.dataPath + $"/{debuggingFile}");
+            unchecked
+            {
+                
+                GameEntity[] entities;
+                for (int i = 0; i < _numTypes; i++)
+                {
+                    if (_entitiesMap.TryGetValue(GetTypeFromID((byte)i), out entities))
+                    {
+                        hash ^= i.GetHashCode();
+                        for (int j = 0; j < entities.Length; j++)
+                        {
+                            if (entities[j] != null && entities[j].Active)
+                            {
+                                hash ^= j.GetHashCode();
+                                hash *= entities[j].HashFullState(asPlayer);
+                                if (LogHashInfo) fileStream.WriteLine($"{GetTypeFromID((byte)i).Name} #{j}: {entities[j].HashFullState(asPlayer)} (!{hash}!)");
+                            }
+                        }
+                    }
+                }
+            }
+            if (LogHashInfo) fileStream.Close();
+            return hash;
         }
         
         
@@ -190,13 +428,13 @@ namespace GameLogic
         protected static Dictionary<byte, Type> typeMap = new Dictionary<byte, Type>();
         protected static Dictionary<Type, byte> reverseTypeMap = new Dictionary<Type, byte>();
         public static int TypesHash;
-
+        private static int _numTypes;
         static void AssignTypeIDs()
         {
             Assembly assembly = Assembly.GetAssembly(typeof(GameEntity));
 
             var gameEntityTypes = assembly.GetTypes()
-                .Where(t => t.IsSubclassOf(typeof(GameEntity)))
+                .Where(t => t.IsSubclassOf(typeof(GameEntity)) && !t.IsAbstract)
                 .OrderBy(t => t.FullName) // Order types by their full name to ensure consistent ordering.
                 .ToList();
 
@@ -204,6 +442,8 @@ namespace GameLogic
             {
                 throw new InvalidOperationException($"Cannot map more than {byte.MaxValue} types. Found {gameEntityTypes.Count} subtypes of GameEntity.");
             }
+
+            _numTypes = gameEntityTypes.Count;
 
             // Assign a byte id to each type.
             byte id = 0;
@@ -218,7 +458,6 @@ namespace GameLogic
             var concatenatedTypes = gameEntityTypes.Aggregate("", (current, type) => current + type.FullName);
             TypesHash = concatenatedTypes.GetHashCode();
         }
-        
         public static void SetTypeID(Type type, byte id)
         {
             if (typeMap.ContainsKey(id) || reverseTypeMap.ContainsKey(type))
@@ -237,7 +476,7 @@ namespace GameLogic
             }
             catch (KeyNotFoundException e)
             {
-                throw new KeyNotFoundException();
+                throw new KeyNotFoundException("Type not found. Has it been registered in the game state");
             } 
         }
         public static byte GetTypeID(Type type)
@@ -248,9 +487,10 @@ namespace GameLogic
             }
             catch (KeyNotFoundException e)
             {
-                Debug.LogError($"Type not mapped {type.FullName}");
+                Debug.LogError($"Type {type.FullName} not found. Has it been registered in the game state");
                 return 0;
             }
         }
+        public IPlayerAction GenerateClientsidePlayerActionByName(string name) => PlayerAction.GenerateClientsidePlayerActionByName(this, name);
     }
 }

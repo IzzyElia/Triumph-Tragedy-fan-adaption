@@ -4,6 +4,7 @@ using System.Diagnostics;
 using TMPro;
 using TriangleNet.Geometry;
 using UnityEditor;
+using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
@@ -12,34 +13,11 @@ using Random = UnityEngine.Random;
 namespace GameBoard
 {
     [ExecuteAlways]
-    public class MapTile : MonoBehaviour
+    public class MapTile : MapObject
     {
-        private Map _map;
-        public Map Map
-        {
-            get
-            {
-                SetMap();
-                return _map;
-            }
-            set
-            {
-                _map = value;
-            }
-        }
-
-        void SetMap()
-        {
-            if (_map == null)
-            {
-                _map = GetComponentInParent<Map>();
-                if (_map == null)
-                    _map = transform.parent.GetComponentInParent<Map>();
-                _map.RecalculateMapObjectLists();
-            }
-        }
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshRenderer meshRenderer;
+        [SerializeField] private MeshCollider meshCollider;
         [SerializeField] private TextMeshPro cityTextTMP;
 
         public Mesh Mesh
@@ -54,6 +32,7 @@ namespace GameBoard
         [SerializeField] private GameObject cityText;
         [SerializeField] private GameObject resourceMarker;
         [SerializeField] private GameObject colonialResourceMarker;
+        public int startingCadres;
         public int resources;
         public int colonialResources;
         public int citySize;
@@ -65,66 +44,179 @@ namespace GameBoard
         [SerializeField] [HideInInspector] private Vector3 lastCalculatedObjectPosition = Vector3.negativeInfinity;
         [SerializeField] public Vector3 holeMarker;
         public bool containsHole { get; private set; }
-        string MeshSavePath => $"Assets/Resources/{name}.mesh";
-        string MeshLoadPath => $"{name}";
+        string MeshSavePath => $"Assets/Resources/Meshes/Map/Tiles/{name}.mesh";
+        string MeshLoadPath => $"Meshes/Map/Tiles/{name}";
+        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        private static Material seaMaterial;
+        private static Material landMaterial;
+        private static Material straitMaterial;
+        private static readonly int OccupierColor = Shader.PropertyToID("_OccupierColor");
 
-        private void OnEnable()
+#if !UNITY_EDITOR
+        static MapTile()
         {
-            meshFilter.sharedMesh = null;
+            seaMaterial = Resources.Load<Material>("Shaders/Sea");
+            landMaterial = Resources.Load<Material>("Shaders/Land");
+            straitMaterial = Resources.Load<Material>("Shaders/Strait");
         }
+#endif
+
         
-        private void OnDisable()
+        private void Start()
         {
-            if (_map != null)
-                Map.RecalculateMapObjectLists();
+            SetupMaterialForEditor();
         }
 
-        public void Recalculate()
+        public bool IsPointInside(Vector2 point)
         {
-            if (_map != null)
-                meshFilter.sharedMesh = _map.fallbackMapTileMesh;
-            if (markComplete)
+            point -= (Vector2)transform.position;
+            Vector3[] vertices = Mesh.vertices;
+            bool result = false;
+            for (int i = 0, j = vertices.Length - 1; i < vertices.Length; j = i++)
+            {
+                if ((vertices[i].y > point.y) != (vertices[j].y > point.y) &&
+                    (point.x < (vertices[j].x - vertices[i].x) * (point.y - vertices[i].y) / (vertices[j].y - vertices[i].y) + vertices[i].x))
+                {
+                    result = !result;
+                }
+            }
+            return result;
+        }
+        public void Recalculate(bool forceRecalculateMesh = false)
+        {
+#if UNITY_EDITOR
+            meshCollider.convex = false;
+            meshCollider.isTrigger = false;
+            gameObject.layer = LayerMask.NameToLayer("Tiles");
+            
+            mapCountry = transform.parent.GetComponent<MapCountry>();
+            if (forceRecalculateMesh)
+            {
+                FlashMesh();
+            }
+            else if (markComplete)
             {
                 SetMeshToFlashed();
             }
             else
             {
                 meshFilter.sharedMesh = RecalculateMesh();
+            }
+            SetupMaterialForEditor();
+            //if (!markComplete)
+            //    AutoReorderBorders();
+#endif
+        }
+
+        public void SetupMaterialDuringRuntime(TerrainType terrain, Color nationalColor, Color overlordColor, Color factionColor,
+            Color occupierColor, bool isOccupied, bool isColony)
+        {
+            Color baseColor;
+            if (terrainType == TerrainType.Sea)
+            {
+                meshRenderer.material.SetColor(BaseColor, new Color(0.15f, 0.6f, 1f));
+            }
+            else if (terrainType == TerrainType.Ocean)
+            {
+                meshRenderer.material.SetColor(BaseColor, new Color(0.15f, 0.3f, 1f));
 
             }
+            else if (terrainType == TerrainType.NotInPlay)
+            {
+                baseColor = Color.white * 0.2f ;
+            }
+            else if (terrainType == TerrainType.Land || terrainType == TerrainType.Strait)
+            {
+                if (isOccupied)
+                {
+                    meshRenderer.material.SetColor(OccupierColor, occupierColor);
+                }
+                else
+                {
+                    meshRenderer.material.SetColor(OccupierColor, Color.white);
+                }
+
+                if (isColony)
+                {
+                    meshRenderer.material.SetColor(BaseColor, (overlordColor*2 + factionColor*3 + nationalColor) / 6f);
+                }
+                else
+                {
+                    meshRenderer.material.SetColor(BaseColor, (factionColor*2 + nationalColor) / 3f);
+                }
+            }
+            else
+            {
+                Debug.LogError("Unsupported terrain type");
+                return;
+            }
             
-            // TODO TEMP Set a random test color
+        }
+        private void SetupMaterialForEditor()
+        {
             Random.InitState(name.GetHashCode());
-            Color color = new Color(Random.value, Random.value, Random.value);
+            //Color randColor = new Color(Random.value, Random.value, Random.value);
+            Material material;
+            Color baseColor;
 
             if (terrainType == TerrainType.Sea)
             {
-                color = (color + Color.cyan*2) / 3f;
+                baseColor = new Color(0.15f, 0.6f, 1f);
+                material = Resources.Load<Material>("Shaders/Sea");
             }
-            if (terrainType == TerrainType.Ocean)
+            else if (terrainType == TerrainType.Ocean)
             {
-                color = (color + Color.blue*2) / 3f;
+                baseColor = new Color(0.15f, 0.3f, 1f);
+                material = Resources.Load<Material>("Shaders/Sea");
+
             }
-            if (terrainType == TerrainType.NotInPlay)
+            else if (terrainType == TerrainType.NotInPlay)
             {
-                color = (color + Color.magenta*2) / 3f;
+                baseColor = Color.white * 0.2f ;
+                material = Resources.Load<Material>("Shaders/Land");
+
             }
-            if (terrainType == TerrainType.Land)
+            else if (terrainType == TerrainType.Strait)
             {
-                color = (color + new Color(0.5f, 0.2f, 0.2f)*2) / 3f;
+                if (!(mapCountry is null))
+                    baseColor = mapCountry.color;
+                else
+                    baseColor = Color.black;
+                material = Resources.Load<Material>("Shaders/Strait");
+            }
+            else if (terrainType == TerrainType.Land)
+            {
+                if (!(mapCountry is null))
+                    baseColor = mapCountry.color;
+                else
+                    baseColor = Color.black;
+                material = Resources.Load<Material>("Shaders/Land");
+            }
+            else
+            {
+                material = null;
+                Debug.LogError("Unsupported terrain type");
+                return;
             }
 
-            meshRenderer.sharedMaterial.color = color;
-            //if (!markComplete)
-            //    AutoReorderBorders();
+            meshRenderer.sharedMaterial = new Material(material);
+            meshRenderer.sharedMaterial.SetColor(BaseColor, baseColor);
         }
-        
-        private void OnValidate()
+        /// <returns> (Min, Max) in world space </returns>
+        public (Vector2, Vector2) GetMeshBoundingBox()
         {
-            //Recalculate();
+            Vector3[] vertices = Mesh.vertices;
+            Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
+            Vector2 max = new Vector2(float.MinValue, float.MinValue);
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Vector2 position = transform.position;
+                Vector2 vertex = new Vector2(vertices[i].x, vertices[i].y) + position;
+                min = Vector2.Min(min, vertex);
+                max = Vector2.Max(max, vertex);
+            }
+            return (min, max);
         }
-
-        
         public (Vector3[], Vector3[]) GetVertices() //main vertices, hole/island
         {
             List<Vector3> vertices = new List<Vector3>();
@@ -159,7 +251,6 @@ namespace GameBoard
 
             return (vertices.ToArray(), hole.ToArray());
         }
-        
         public Mesh RecalculateMesh()
         {
             (Vector3[] vertices, Vector3[] holeVertices) = GetVertices();
@@ -236,12 +327,21 @@ namespace GameBoard
                     }
                     triangles = flippedTriangles;
                 }
+                
+                // UVS mapped directly to vertex coordinates. Should I normalize them?
+                Vector2[] uvs = new Vector2[vertices.Length];
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    uvs[i] = new Vector2(vertices[i].x, vertices[i].y);
+                }
+
 
                 try
                 {
                     Mesh mesh = new Mesh();
                     mesh.vertices = vertices;
                     mesh.triangles = triangles;
+                    mesh.uv = uvs;
                     mesh.RecalculateNormals();
                     mesh.RecalculateBounds();
                     mesh.RecalculateTangents();
@@ -259,7 +359,6 @@ namespace GameBoard
                 return null;
             }
         }
-
         /// <summary>
         /// Save the mesh and set it in the inspector
         /// </summary>
@@ -272,17 +371,40 @@ namespace GameBoard
             AssetDatabase.Refresh();  
             markComplete = SetMeshToFlashed();
         }
-
         public bool SetMeshToFlashed()
         {
             UnityEngine.Mesh loadedMesh = Resources.Load<Mesh>(MeshLoadPath);
-            if (loadedMesh != null)
+            Material loadedShader;
+            if (terrainType == TerrainType.Land || terrainType == TerrainType.NotInPlay)
+                loadedShader = Resources.Load<Material>("Shaders/Land");
+            else if (terrainType == TerrainType.Sea || terrainType == TerrainType.Ocean)
+                loadedShader = Resources.Load<Material>("Shaders/Sea");
+            // TODO Straits should have their own shader
+            else if (terrainType == TerrainType.Strait)
+                loadedShader = Resources.Load<Material>("Shaders/Land");
+            else
             {
-                SerializedObject serializedObject = new SerializedObject(meshFilter);
-                SerializedProperty meshProperty = serializedObject.FindProperty("m_Mesh");
+                loadedShader = Resources.Load<Material>("Shaders/Land");
+                Debug.LogWarning($"No shader assigned to terrain type {terrainType.ToString()}");
+            }
+            if (loadedMesh is not null)
+            {
+                SerializedObject serializedMeshFilter = new SerializedObject(meshFilter);
+                SerializedObject serializedMeshRenderer = new SerializedObject(meshRenderer);
+                SerializedObject serializedMeshCollider = new SerializedObject(meshCollider);
+                SerializedProperty meshProperty = serializedMeshFilter.FindProperty("m_Mesh");
+                SerializedProperty shaderProperty = serializedMeshRenderer.FindProperty("m_Materials.Array.data[0]");
+                SerializedProperty colliderProperty = serializedMeshCollider.FindProperty("m_Mesh");
                 meshProperty.objectReferenceValue = loadedMesh;
-                serializedObject.ApplyModifiedProperties();
+                shaderProperty.objectReferenceValue = loadedShader;
+                colliderProperty.objectReferenceValue = loadedMesh;
+                serializedMeshFilter.ApplyModifiedProperties();
+                serializedMeshRenderer.ApplyModifiedProperties();
+                serializedMeshCollider.ApplyModifiedProperties();
                 
+                EditorUtility.SetDirty(meshFilter);
+                EditorUtility.SetDirty(meshRenderer);
+                EditorUtility.SetDirty(meshCollider);
                 EditorUtility.SetDirty(this);
                 return true;
             }
@@ -293,15 +415,16 @@ namespace GameBoard
                 return false;
             }
         }
-
         public void UnflashMesh()
         {
             markComplete = false;
             meshFilter.sharedMesh = null;
+            SerializedObject serializedObject = new SerializedObject(meshFilter);
+            SerializedProperty meshProperty = serializedObject.FindProperty("m_Mesh");
+            meshProperty.objectReferenceValue = null;
             AssetDatabase.DeleteAsset(MeshSavePath);
             AssetDatabase.Refresh();
         }
-
         public void AutoReorderBorders()
         {
             // Calculate the center of all points
@@ -387,37 +510,6 @@ namespace GameBoard
             
             Recalculate();
         }
-
-        public void RecalculateAppearance()
-        {
-            if (!mapTextOverride)
-                cityTextTMP.text = gameObject.name;
-            
-            if (Application.isEditor)
-                return;
-
-            if (terrainType == TerrainType.Land)
-            {
-                meshRenderer.material.SetColor("_BaseColor", mapCountry.color);
-            }
-            else if (terrainType == TerrainType.NotInPlay)
-            {
-                
-            }
-            else if (terrainType == TerrainType.Sea)
-            {
-                
-            }
-            else if (terrainType == TerrainType.Ocean)
-            {
-                
-            }
-            else if (terrainType == TerrainType.Strait)
-            {
-                
-            }
-        }
-        
         private static bool IsClockwise(IList<Vector3> vertices)
         {
             float sum = 0f;

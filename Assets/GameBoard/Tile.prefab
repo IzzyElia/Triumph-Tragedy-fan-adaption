@@ -154,8 +154,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df11c122d295b4710929d30e9fe32df4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ID: 0
+  _map: {fileID: 0}
   meshFilter: {fileID: 777100878405837985}
   meshRenderer: {fileID: 2861060742254397868}
+  meshCollider: {fileID: 7669090891193648968}
   cityTextTMP: {fileID: 5244122404907601365}
   connectedSpaces: []
   connectedBorders: []
@@ -164,6 +167,7 @@ MonoBehaviour:
   cityText: {fileID: 4243240993370406014}
   resourceMarker: {fileID: 5046551706378104615}
   colonialResourceMarker: {fileID: 8951336120813667922}
+  startingCadres: 0
   resources: 0
   colonialResources: 0
   citySize: 0

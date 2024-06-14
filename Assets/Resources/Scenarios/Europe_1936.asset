@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb59fb54df964fecbd7960fae4cbf88b, type: 3}
+  m_Name: Europe_1936
+  m_EditorClassIdentifier: 
+  startYear: 0
+  factions:
+  - name: Fascists
+    countries:
+    - Germany
+    - Italy
+    startingUnits:
+    - MapTile: {fileID: 8700191897600604372, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 365699738267558370, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 6
+    - MapTile: {fileID: 4936509459788390361, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 365699738267558370, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 4
+    - MapTile: {fileID: 9112869489683516298, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 365699738267558370, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 6244203193071147551, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 365699738267558370, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 9046783402417077403, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 2088817228656877189, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 4
+    - MapTile: {fileID: 6954673432580231955, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 2088817228656877189, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 3195639262405691904, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 2088817228656877189, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    startingSpecialUnits: []
+  - name: Capitalists
+    countries:
+    - Britain
+    - France
+    startingUnits:
+    - MapTile: {fileID: 2339995824078178011, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 3
+    - MapTile: {fileID: 7999419325253369755, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 1798135159089255643, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 4346932461545058149, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 5621672820047173941, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 3
+    - MapTile: {fileID: 538405541724577114, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 5768317157702377524, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 2822140652518384808, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 5768317157702377524, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 3
+    - MapTile: {fileID: 6221473611090455907, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 5768317157702377524, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    startingSpecialUnits:
+    - MapTile: {fileID: 2339995824078178011, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      UnitType: Fleet
+      pips: 4
+    - MapTile: {fileID: 4388562294927295886, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      UnitType: Fortress
+      pips: 1
+    - MapTile: {fileID: 628943445086996990, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 7013327297006828533, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      UnitType: Infantry
+      pips: 1
+    - MapTile: {fileID: 7349502083365789740, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 5768317157702377524, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      UnitType: Fortress
+      pips: 3
+  - name: Communists
+    countries:
+    - USSR
+    startingUnits:
+    - MapTile: {fileID: 3744358427191407421, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 3
+    - MapTile: {fileID: 2116466605290887534, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    - MapTile: {fileID: 6052065114385426536, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 3263232209944874668, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 4259745806425406724, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 9008113731651144064, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 4000795588041596330, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 1
+    - MapTile: {fileID: 3342188158160163064, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      Country: {fileID: 3285250618674879535, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
+      startingCadres: 2
+    startingSpecialUnits: []
+  copyValuesFrom: {fileID: 8377974206789487253, guid: dc4f9e821a2b843bc8493961d2d95825, type: 3}
