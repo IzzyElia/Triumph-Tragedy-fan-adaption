@@ -16,11 +16,6 @@ Shader "Custom/UI/UIOutline"
         _ColorMask ("Color Mask", Float) = 15
 
         [Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
-        
-        // Custom properties
-        _ThresholdX ("ThresholdX", Float) = 0.1
-        _ThresholdY ("ThresholdY", Float) = 0.1
-        [MaterialToggle] _IsMask ("IsMask", Float) = 0
     }
 
     SubShader
@@ -107,17 +102,6 @@ Shader "Custom/UI/UIOutline"
             fixed4 frag(v2f IN) : SV_Target
             {
                 half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
-                
-                // Custom shader logic
-                if (_IsMask ^ (IN.texcoord.x >= 1-_ThresholdX || IN.texcoord.x <= _ThresholdX
-                || IN.texcoord.y >= 1-_ThresholdY || IN.texcoord.y <= _ThresholdY))
-                {
-                    //Color = Color;
-                }
-                else {
-                    color = float4(0, 0, 0, 0);
-                }
-                // End custom shader logic
                 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);

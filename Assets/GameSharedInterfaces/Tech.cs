@@ -1,17 +1,37 @@
+using System;
+using UnityEngine;
+
 namespace GameSharedInterfaces
 {
-    public enum Tech
+
+    [Serializable] public class Tech
     {
-        AtomicResearch1,
-        AtomicResearch2,
-        AtomicResearch3,
-        AtomicResearch4,
-        PrecisionBombing,
-        Jets,
-        MotorizedInfantry,
-        HeavyTanks,
-        LSTs,
-        NavalRadar,
-        Sonar
+        public string Name;
+        [NonSerialized] public Texture2D Icon;
+        [NonSerialized] public Sprite Sprite;
+        public int ID;
+
+        public Tech(string Name)
+        {
+            this.Name = Name;
+        }
+        
+        public Tech SetGraphics()
+        {
+            Icon = Resources.Load<Texture2D>($"Icons/Techs/{Name}");
+            if (Icon is null)
+            {
+                Debug.LogWarning($"No icon found for tech {Name}");
+                Icon = Resources.Load<Texture2D>("Icons/Techs/fallback");
+            }
+            Sprite = Resources.Load<Sprite>($"Icons/Techs/{Name}");
+            if (Sprite is null)
+            {
+                Debug.LogWarning($"No icon found for tech {Name}");
+                Sprite = Resources.Load<Sprite>("Icons/Techs/fallback");
+            }
+
+            return this;
+        }
     }
 }

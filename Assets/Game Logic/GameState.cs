@@ -9,6 +9,7 @@ using System.Reflection;
 using Game_Logic;
 using GameBoard.UI;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 
 namespace GameLogic
 {
@@ -60,6 +61,10 @@ namespace GameLogic
             protected set
             {
                 _playerCount = value;
+                foreach (var entity in GetAllEntities())
+                {
+                    entity.OnPlayerCountChanged(value);
+                }
             }
         }
 
@@ -67,7 +72,7 @@ namespace GameLogic
         public string RulesetName;
         public bool IsServer => NetworkMember is UnityServer;
         public Map MapRenderer;
-        public IRuleset Ruleset { get; set; }
+        public Ruleset Ruleset { get; set; }
         public UIController UIController;
         /// <summary>
         /// Flags that the gamestate is a clientside gamestate being resynced
@@ -153,7 +158,7 @@ namespace GameLogic
 
         public void SetUIActive(bool active)
         {
-            UIController.ActiveLocally = active;
+            UIController.SetActive(active);
         }
         public bool IsPlayerSyncedOrBeingResynced(int iPlayer)
         {
@@ -216,13 +221,13 @@ namespace GameLogic
         }
         public abstract void OnSendingSync(int targetPlayer);
 
-        public List<ICard> GetCardsInHand(int player)
+        public List<ICard> GetCardsInHand(int iPlayerFaction)
         {
             List<ICard> cards = new List<ICard>();
             GameCard[] allCards = GameCard.GetAllCards(this);
             for (int i = 0; i < allCards.Length; i++)
             {
-                if (allCards[i].HoldingPlayer == player) cards.Add(allCards[i]);
+                if (allCards[i].HoldingPlayer == iPlayerFaction) cards.Add(allCards[i]);
             }
 
             return cards;
@@ -312,6 +317,18 @@ namespace GameLogic
 
             return null;
         }
+        public T[] GetEntities<T>(int[] ids) where T : GameEntity
+        {
+            T[] results = new T[ids.Length];
+            if (_entitiesMap.TryGetValue(typeof(T), out GameEntity[] entities))
+            {
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    results[i] = (T)entities[ids[i]];
+                }
+            }
+            return results;
+        }
         public T GetOrCreateEntity<T>(int id) where T : GameEntity => (T)GetOrCreateEntity(typeof(T), id);
         /// <summary>
         /// Gets the entity of the specified type with the specified ID, creating a new one if
@@ -391,7 +408,7 @@ namespace GameLogic
 
         public int MaxEntityID<T>() => MaxEntityID(typeof(T));
 
-        private const bool LogHashInfo = false;
+        private const bool LogHashInfo = true;
         public int GetStateHash(int asPlayer, string debuggingFile = "HashLog.txt")
         {
             int hash = 17;
@@ -405,12 +422,12 @@ namespace GameLogic
                 {
                     if (_entitiesMap.TryGetValue(GetTypeFromID((byte)i), out entities))
                     {
-                        hash ^= i.GetHashCode();
+                        hash *= i.GetHashCode();
                         for (int j = 0; j < entities.Length; j++)
                         {
                             if (entities[j] != null && entities[j].Active)
                             {
-                                hash ^= j.GetHashCode();
+                                hash *= j.GetHashCode();
                                 hash *= entities[j].HashFullState(asPlayer);
                                 if (LogHashInfo) fileStream.WriteLine($"{GetTypeFromID((byte)i).Name} #{j}: {entities[j].HashFullState(asPlayer)} (!{hash}!)");
                             }
@@ -491,6 +508,6 @@ namespace GameLogic
                 return 0;
             }
         }
-        public IPlayerAction GenerateClientsidePlayerActionByName(string name) => PlayerAction.GenerateClientsidePlayerActionByName(this, name);
+        public IPlayerAction GenerateClientsidePlayerActionByName(string name) => PlayerAction.GenerateClientsidePlayerActionByName(this, name, iPlayer);
     }
 }

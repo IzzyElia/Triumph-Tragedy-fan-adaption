@@ -1,5 +1,4 @@
 using System;
-using GameBoard.UI.SpecializeComponents;
 using GameSharedInterfaces;
 using UnityEngine;
 
@@ -11,20 +10,30 @@ namespace GameBoard
         InitialPlacement,
         Held
     }
-    public class CadrePlacementGhost : MapCadreCore
+    public class MapCadrePlacementGhost : MapCadreCore
     {
-        private static GameObject prefab;
+        private static GameObject cachedPrefab;
         [NonSerialized] public UnitGhostPurpose Purpose;
-        public static CadrePlacementGhost Create(string name, Map map, MapTile tile, MapCountry country, UnitType unitType, UnitGhostPurpose purpose)
+
+        public static MapCadrePlacementGhost Create(string name, Map map, MapTile tile, MapCountry country,
+            UnitType unitType, UnitGhostPurpose purpose) =>
+            Create<MapCadrePlacementGhost>(name, map, tile, country, unitType, purpose);
+        public static T Create<T>(string name, Map map, MapTile tile, MapCountry country, UnitType unitType, UnitGhostPurpose purpose, GameObject prefab = null) where T : MapCadrePlacementGhost
         {
             if (prefab is null)
             {
-                prefab = Resources.Load<GameObject>("Prefabs/CadreGhost");
-                if (prefab is null) Debug.LogError("Failed to load cadre ghost prefab");
+                if (cachedPrefab is null)
+                {
+                    cachedPrefab = Resources.Load<GameObject>("Prefabs/CadreGhost");
+                    if (cachedPrefab is null) Debug.LogError("Failed to load cadre ghost prefab");
+                }
+
+                prefab = cachedPrefab;
             }
 
-            CadrePlacementGhost cadre = Instantiate(prefab).GetComponent<CadrePlacementGhost>();
+            T cadre = Instantiate(prefab).GetComponent<T>();
             if (cadre is null) Debug.LogError($"No cadre ghost component attached to the cadre ghost prefab");
+            cadre.UseGhostMaterial = true;
             cadre.Purpose = purpose;
             cadre.RegisterTo(map);
             cadre.transform.SetParent(map.transform);
@@ -37,6 +46,8 @@ namespace GameBoard
                 cadre.transform.position = cadre.ChoosePosition(tile);
                 cadre.transform.SetParent(tile.transform);
             }
+
+            cadre.MaxPips = 0; // Hides the pip display
             cadre.RecalculateAppearance();
             return cadre;
         }

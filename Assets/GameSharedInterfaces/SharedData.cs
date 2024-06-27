@@ -1,7 +1,7 @@
 namespace GameSharedInterfaces
 {
-    public class SharedData
+    public static class SharedData
     {
-        
+        public static bool SupressDestroyWarningGlobally = false;
     }
 }

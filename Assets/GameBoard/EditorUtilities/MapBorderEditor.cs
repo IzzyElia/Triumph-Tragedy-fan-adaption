@@ -33,13 +33,16 @@ namespace GameBoard.EditorUtilities
         public override void OnInspectorGUI()
         {
             CheckAddPoint();
-            // Draw the default inspector options
             DrawDefaultInspector();
 
-            // Add a custom button to the inspector
             if (GUILayout.Button("Recalculate Board Values"))
             {
                 _border.Map.FullyRecalculate();
+            }
+            
+            if (GUILayout.Button("Recalculate Border"))
+            {
+                _border.Recalculate();
             }
         }
 

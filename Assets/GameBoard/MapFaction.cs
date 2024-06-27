@@ -1,50 +1,18 @@
 using System;
 using System.Collections.Generic;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
 
 namespace GameBoard
 {
-
-    [Serializable] 
-    public struct StartingUnitInfo
-    {
-        public MapTile MapTile;
-        public MapCountry Country;
-        public int startingCadres;
-    
-        public StartingUnitInfo(MapTile mapTile, MapCountry country, int startingCadres)
-        {
-            this.MapTile = mapTile;
-            this.Country = country;
-            this.startingCadres = startingCadres;
-        }
-
-        public override int GetHashCode() => HashCode.Combine(MapTile.ID, Country.ID, startingCadres);
-    }
-    [Serializable] public struct SpecialStartingUnitInfo
-    {
-        
-        public MapTile MapTile;
-        public MapCountry Country;
-        public string UnitType;
-        public int pips;
-        
-        public SpecialStartingUnitInfo(MapTile mapTile, MapCountry country, string unitType, int pips)
-        {
-            MapTile = mapTile;
-            Country = country;
-            UnitType = unitType;
-            this.pips = pips;
-        }
-    }
     public class MapFaction : MapObject
     {
         public static MapFaction Create(string name, Map map, int id)
         {
             MapFaction mapFaction = new GameObject(name, typeof(MapFaction)).GetComponent<MapFaction>();
-            mapFaction.RegisterTo(map);
             mapFaction.ID = id;
+            mapFaction.RegisterTo(map);
             mapFaction.transform.SetParent(map.countriesWrapper.transform);
             return mapFaction;
         }

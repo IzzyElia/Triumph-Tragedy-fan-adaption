@@ -1,4 +1,5 @@
 using System;
+using GameSharedInterfaces;
 using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents
@@ -9,7 +10,7 @@ namespace GameBoard.UI.SpecializeComponents
         public int iMoveTarget => MoveTarget.ID;
         public int[] iMovementPath;
         public int[] path;
-        public CadrePlacementGhost ghost;
+        public MapCadrePlacementGhost ghost;
 
         public override void UIUpdate()
         {
@@ -21,7 +22,7 @@ namespace GameBoard.UI.SpecializeComponents
             int iCurrentHoveredTile = UIController.HoveredOverTile.ID;
             int iPreviousValidHoveredTile = path[^1];
             
-            if (UIController.PointerInputStatus == PointerInputStatus.Releasing)
+            if (UIController.PointerInputStatus == InputStatus.Releasing)
             {
                 UIController.MovementAction.AddParameter((iMoveTarget, path));
             }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using GameSharedInterfaces;
 using TMPro;
 using TriangleNet.Geometry;
 using UnityEditor;
@@ -12,6 +13,21 @@ using Random = UnityEngine.Random;
 
 namespace GameBoard
 {
+    public enum TerrainType
+    {
+        Land,
+        Sea,
+        Ocean,
+        Strait,
+        NotInPlay
+    }
+
+    public enum TileHighlightState
+    {
+        NotHighlighted,
+        HoverHighlighted,
+        MovementOptionHighlighted,
+    }
     [ExecuteAlways]
     public class MapTile : MapObject
     {
@@ -37,6 +53,7 @@ namespace GameBoard
         public int colonialResources;
         public int citySize;
         public TerrainType terrainType;
+        public bool IsCoastal;
         [SerializeField] public bool markFunctional = false;
         [SerializeField] public bool markComplete = false;
         [SerializeField] private bool mapTextOverride;
@@ -51,6 +68,10 @@ namespace GameBoard
         private static Material landMaterial;
         private static Material straitMaterial;
         private static readonly int OccupierColor = Shader.PropertyToID("_OccupierColor");
+
+
+        [NonSerialized] public MapCountry Occupier;
+        [NonSerialized] public TileHighlightState HighlightState;
 
 #if !UNITY_EDITOR
         static MapTile()
@@ -108,8 +129,7 @@ namespace GameBoard
 #endif
         }
 
-        public void SetupMaterialDuringRuntime(TerrainType terrain, Color nationalColor, Color overlordColor, Color factionColor,
-            Color occupierColor, bool isOccupied, bool isColony)
+        public void RecalculateMaterialDuringRuntime()
         {
             Color baseColor;
             if (terrainType == TerrainType.Sea)
@@ -127,22 +147,22 @@ namespace GameBoard
             }
             else if (terrainType == TerrainType.Land || terrainType == TerrainType.Strait)
             {
-                if (isOccupied)
+                if (Occupier is not null)
                 {
-                    meshRenderer.material.SetColor(OccupierColor, occupierColor);
+                    meshRenderer.material.SetColor(OccupierColor, Occupier.CalculatedColor);
                 }
                 else
                 {
                     meshRenderer.material.SetColor(OccupierColor, Color.white);
                 }
 
-                if (isColony)
+                if (mapCountry.colonialOverlord is not null)
                 {
-                    meshRenderer.material.SetColor(BaseColor, (overlordColor*2 + factionColor*3 + nationalColor) / 6f);
+                    meshRenderer.material.SetColor(BaseColor, (mapCountry.colonialOverlord.CalculatedColor*2 + mapCountry.CalculatedColor) / 3f);
                 }
                 else
                 {
-                    meshRenderer.material.SetColor(BaseColor, (factionColor*2 + nationalColor) / 3f);
+                    meshRenderer.material.SetColor(BaseColor, mapCountry.CalculatedColor);
                 }
             }
             else
@@ -151,6 +171,25 @@ namespace GameBoard
                 return;
             }
             
+            RecalculateHighlighting();
+        }
+
+        public void RecalculateHighlighting()
+        {
+            if (Map.UIController.HoveredOverTile == this)
+            {
+                HighlightState = TileHighlightState.HoverHighlighted;
+            }
+            else if (Map.UIController.MovementHighlights.Contains(this.ID))
+            {
+                HighlightState = TileHighlightState.MovementOptionHighlighted;
+            }
+            else HighlightState = TileHighlightState.NotHighlighted;
+
+            foreach (var borderReference in connectedBorders)
+            {
+                borderReference.border.RecalculateMaterialRuntimeValues();
+            }
         }
         private void SetupMaterialForEditor()
         {
@@ -522,6 +561,13 @@ namespace GameBoard
             return sum > 0;
         }
 
+        public override void OnHoveredStatusChanged(bool isHoveredOver)
+        {
+            base.OnHoveredStatusChanged(isHoveredOver);
+            RecalculateMaterialDuringRuntime();
+            RecalculateHighlighting();
+        }
+
         [Serializable]
         public class BorderReference
         {
@@ -535,15 +581,6 @@ namespace GameBoard
                 this.reverseVertexOrder = false;
                 this.borderIsHole = false;
             }
-        }
-        
-        public enum TerrainType
-        {
-            Land,
-            Sea,
-            Ocean,
-            Strait,
-            NotInPlay
         }
     }
 }

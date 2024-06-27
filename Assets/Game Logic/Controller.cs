@@ -10,6 +10,7 @@ using GameLogic;
 using GameSharedInterfaces;
 using Izzy.ForcedInitialization;
 using IzzysConsole;
+using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -68,7 +69,6 @@ public class Controller : MonoBehaviour
     public static List<UnityClient> ActiveClients = new ();
     public static bool IsHost => ActiveServer is not null;
     
-
     private void Awake()
     {
         if (instance != null)
@@ -102,6 +102,7 @@ public class Controller : MonoBehaviour
         }
 
         ActiveServer.StartGame();
+        gameState.JumpTo(GamePhase.GiveCommands);
     }
 
     private void Update()
@@ -120,6 +121,7 @@ public class Controller : MonoBehaviour
             {
                 if (client.GameState.IsWaitingOnPlayer(client.GameState.iPlayer))
                 {
+                    if (!ClientReadyToBeActivated(client)) break;
                     activeLocalPlayer = client.GameState.iPlayer;
                     break;
                 }
@@ -128,16 +130,22 @@ public class Controller : MonoBehaviour
             {
                 if (client.GameState.iPlayer == activeLocalPlayer)
                 {
+                    if (!ClientReadyToBeActivated(client)) break;
                     ActiveLocalClient = client;
-                    client.GameState.SetUIActive(true);
+                    client.GameState.UIController.SetActive(true);
                     foreach (var otherClient in ActiveClients)
                     {
-                        // This breaks when there are unconnected/uninitialized clients
-                        if (otherClient != client) otherClient.GameState.SetUIActive(false);
+                        // TODO This breaks when there are unconnected/uninitialized clients
+                        if (otherClient != client) otherClient.GameState.UIController.SetActive(false);
                     }
                 }
             }
         }
+    }
+
+    bool ClientReadyToBeActivated(UnityClient client)
+    {
+        return client.GameState.UIController.Initialized && client.GameState.IsSynced;
     }
 
     private void OnDestroy()
@@ -154,5 +162,6 @@ public class Controller : MonoBehaviour
     {
         Disposer.DisposeAll();
         supressDestroyWarning = true;
+        SharedData.SupressDestroyWarningGlobally = true;
     }
 }

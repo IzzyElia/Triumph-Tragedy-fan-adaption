@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents
 {
-    [ExecuteAlways] [RequireComponent(typeof(TextMeshProUGUI))]
     public class DebugTextbox : UIWindow
     {
         [SerializeField] private TextMeshProUGUI tmp;
@@ -33,11 +32,6 @@ namespace GameBoard.UI.SpecializeComponents
         {
             get => tmp.text;
             set => tmp.text = value;
-        }
-
-        private void OnValidate()
-        {
-            tmp = GetComponent<TextMeshProUGUI>();
         }
     }
 }

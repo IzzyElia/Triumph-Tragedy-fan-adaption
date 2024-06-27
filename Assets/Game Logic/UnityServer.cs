@@ -71,6 +71,10 @@ namespace GameLogic
             _ongoingResync = new Queue<GameEntity>();
             _resyncingTarget = default;
             NetworkSettings networkSettings = new NetworkSettings();
+            networkSettings.WithNetworkConfigParameters(
+                heartbeatTimeoutMS:int.MaxValue, // No timeout
+                reconnectionTimeoutMS:int.MaxValue // No timeout
+            );
             _networkDriver = NetworkDriver.Create(networkSettings);
             _port = port;
             _password = password;
@@ -242,6 +246,7 @@ namespace GameLogic
                     if (clientHash != expectedHash)
                     {
                         NetworkingLog($"Client {source} is out of sync ({clientHash}/{expectedHash}). Resyncing...", DebuggingLevel.Events);
+                        Debug.LogWarning("Out of sync event triggered");
                         QueueSync(_connections[source]);
                     }
                     break;
@@ -262,6 +267,7 @@ namespace GameLogic
                     }
                     else
                     {
+                        Debug.LogWarning($"Attempted action is not valid\nAction type = {playerAction.GetType().Name}\nReason = {actionValidation.reason}");
                         SendPlayerActionCallback(_connections[source], callbackHeader:playerActionCallbackID, actionSuccess:false, actionValidation.reason);
                     }
                     
@@ -283,7 +289,7 @@ namespace GameLogic
             {
                 if (_ongoingResync.TryDequeue(out GameEntity entity))
                 {
-                    entity.PushFullState(iPlayer);
+                    entity.RecalculateDerivedValuesAndPushFullState(iPlayer);
                 }
                 else
                 {

@@ -14,8 +14,16 @@ namespace Game_Logic.TriumphAndTragedy
             RegisterCardType<InvestmentCard>();
         }
 
-        private List<Tech> _techs = new List<Tech>();
-        public IReadOnlyList<Tech> Techs => _techs;
+        public void SetTechs(params Tech[] techs)
+        {
+            Techs.Clear();
+            for (int i = 0; i < techs.Length; i++)
+            {
+                Techs.Add(techs[i].ID);
+            }
+        }
+
+        public List<int> Techs { get; set; } = new List<int>();
         public int FactoryValue { get; set; }
 
         protected override void Init()
@@ -28,9 +36,9 @@ namespace Game_Logic.TriumphAndTragedy
         {
             outgoingMessage.WriteByte((byte)FactoryValue);
             outgoingMessage.WriteByte((byte)Techs.Count);
-            for (int i = 0; i < _techs.Count; i++)
+            for (int i = 0; i < Techs.Count; i++)
             {
-                outgoingMessage.WriteByte((byte)_techs[i]);
+                outgoingMessage.WriteUShort((ushort)Techs[i]);
             }
         }
 
@@ -38,10 +46,10 @@ namespace Game_Logic.TriumphAndTragedy
         {
             FactoryValue = incomingMessage.ReadByte();
             byte techsLength = incomingMessage.ReadByte();
-            _techs.Clear();
+            Techs.Clear();
             for (int i = 0; i < techsLength; i++)
             {
-                _techs[i] = (Tech)incomingMessage.ReadByte();
+                Techs.Add(incomingMessage.ReadUShort());
             }
         }
 
@@ -54,7 +62,7 @@ namespace Game_Logic.TriumphAndTragedy
                 {
                     for (int i = 0; i < Techs.Count; i++)
                     {
-                        hash *= _techs[i].GetHashCode();
+                        hash *= Techs[i].GetHashCode();
                     }
                 }
 

@@ -21,12 +21,91 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 CommitInitialPlacement();
             }
+            else if (GameState.GamePhase == GamePhase.Production)
+            {
+                CommitProduction();
+            }
+            else if (GameState.GamePhase == GamePhase.Diplomacy)
+            {
+                CommitCardPlay();
+            }
+            else if (GameState.GamePhase == GamePhase.SelectCommandCards)
+            {
+                CommitCardPlay();
+            }
+            else if (GameState.GamePhase == GamePhase.GiveCommands)
+            {
+                CommitCommands();
+            }
+        }
+
+        void CommitCommands()
+        {
+            UIController.MovementAction.Send(OnCommandsReply);
+            
+            _button.interactable = false;
+        }
+
+        void OnCommandsReply(bool success)
+        {
+            if (success)
+            {
+                UIController.CardHand.DropCards(); // Reset the UI Status of the players hand
+                UIController.CleanupAfterMovement();
+                Debug.Log("WOOHOO!!!");
+            }
+
+            _button.interactable = true;
+        }
+
+        void CommitCardPlay()
+        {
+            UICardHand cardHand = UIController.CardHand;
+
+            CardplayInfo cardplayInfo = (CardplayInfo)UIController.CardplayAction.GetParameters()[0];
+            if (cardplayInfo.CardPlayType == CardPlayType.None) 
+                UIController.CardplayAction.SetAllParameters(
+                    new CardplayInfo(CardEffectTargetSelectionType.Global, CardPlayType.Pass, -1, Array.Empty<int>()));
+            UIController.CardplayAction.Send(OnCardplayReply);
+            
+            _button.interactable = false;
+        }
+
+        void OnCardplayReply(bool success)
+        {
+            if (success)
+            {
+                UIController.CardHand.DropCards(); // Reset the UI Status of the players hand
+                UIController.CleanupAfterMovement();
+                Debug.Log("WOOHOO!!!");
+            }
+
+            _button.interactable = true;
+        }
+
+        void CommitProduction()
+        {
+            UIController.ProductionAction.Send(OnProductionReply);
+            _button.interactable = false;
+        }
+
+        void OnProductionReply(bool success)
+        {
+            if (success)
+            {
+                foreach (MapCadre cadre in MapRenderer.MapCadresByID)
+                {
+                    if (cadre is not null) cadre.ProjectedPips = 0;
+                }
+                UIController.ProductionAction.Reset();
+                Debug.Log("WOOHOO!!");
+            }
+            _button.interactable = true;
         }
 
         void CommitInitialPlacement()
         {
             // Parameters format is an array of (int iTile, byte unitType, int iCountry, byte pipsToAdd)[]
-            UIController.InitialPlacementAction.Reset();
             List<(int iTile, byte unitType, int iCountry, byte pipsToAdd)> placements = new List<(int iTile, byte unitType, int iCountry, byte pipsToAdd)>();
             foreach (var placementGhost in UIController.InitialPlacementGhosts)
             {
@@ -41,9 +120,11 @@ namespace GameBoard.UI.SpecializeComponents
         {
             if (success)
             {
+                UIController.InitialPlacementAction.Reset();
                 Debug.Log("WOOHOO!!!");
                 UIController.DestroyInitialPlacementGhosts();
             }
+            _button.interactable = true;
         }
 
         public override void OnGamestateChanged()

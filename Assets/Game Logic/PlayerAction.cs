@@ -16,12 +16,14 @@ namespace GameLogic
         protected static Dictionary<Type, byte> reversePlayerActionTypeMap = new ();
         protected static Dictionary<string, byte> playerActionIDs = new ();
 
+        private static byte _typeCounter = 0;
         protected static void RegisterPlayerActionType<T>(string name = null) where T : IPlayerAction
         {
             if (name == null) name = typeof(T).Name;
-            reversePlayerActionTypeMap.Add(typeof(T), (byte)playerActionTypeMap.Count);
-            playerActionIDs.TryAdd(name, (byte)playerActionTypeMap.Count);
+            reversePlayerActionTypeMap.Add(typeof(T), _typeCounter);
+            playerActionIDs.TryAdd(name, _typeCounter);
             playerActionTypeMap.Add(typeof(T));
+            _typeCounter++;
         }
 
         public static PlayerAction RecreatePlayerActionServerside(GameState gameState, int typeID, int iPlayerFaction, DataStreamReader incomingMessage)
@@ -34,17 +36,23 @@ namespace GameLogic
             return playerAction;
         }
 
-        public static PlayerAction GenerateClientsidePlayerActionByName(GameState gameState, string name)
+        public static PlayerAction GenerateClientsidePlayerActionByName(GameState gameState, string name, int iPlayerFaction)
         {
             if (playerActionIDs.TryGetValue(name, out byte actionID))
             {
                 Type type = playerActionTypeMap[actionID];
                 PlayerAction playerAction = (PlayerAction)Activator.CreateInstance(type);
                 playerAction.gameState = gameState;
+                playerAction.iPlayerFaction = iPlayerFaction;
                 return playerAction;
             }
 
-            Debug.LogError($"{name} is not a defined player action type");
+            string definedActions = string.Empty;
+            foreach (var actionKey in playerActionIDs.Keys)
+            {
+                definedActions += "\n\t" + actionKey;
+            }
+            Debug.LogError($"{name} is not a defined player action type. Does the action definition have the [ForceInitialize] attribute?\nDefined Actions:" + definedActions);
             return null;
         }
 
@@ -62,8 +70,10 @@ namespace GameLogic
         public abstract void Execute();
         public abstract (bool, string) TestParameter(params object[] parameter);
         public abstract void AddParameter(params object[] parameter);
+        public abstract bool RemoveParameter(params object[] parameter);
         public abstract void SetAllParameters(params object[] parameters);
         public abstract object[] GetParameters();
+        public abstract object[] GetData();
         public abstract void Reset();
 
         public abstract (bool, string) Validate();

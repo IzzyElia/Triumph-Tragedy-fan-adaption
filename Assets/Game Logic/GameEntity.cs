@@ -8,14 +8,20 @@ using UnityEngine;
 
 namespace GameLogic
 {
-    public abstract class GameEntity
+    public abstract class GameEntity : IGameEntity
     {
         
         const byte FullStateUpdateRoutingHeader = 0;
         private const byte CustomUpdateRoutingHeader = 1;
         
         protected delegate void UpdateWriter(ref DataStreamWriter outgoingMessage);
-        public int ID;
+
+        private int _id;
+        public int ID
+        {
+            get => _id;
+            set => _id = value;
+        }
         public GameState GameState;
         public Map MapRenderer => GameState.MapRenderer;
         protected UnityServer Server => GameState.NetworkMember as UnityServer;
@@ -34,14 +40,15 @@ namespace GameLogic
 
         public static T Create<T>(GameState gameState) where T : GameEntity => (T)Create(typeof(T), gameState);
         public GameEntity() {}
-        
+
+
         public void PushFullState()
         {
             if (GameState.NetworkMember is UnityServer server)
             {
                 foreach (int iPlayer in GameState.Players)
                 {
-                    PushFullState(iPlayer);
+                    RecalculateDerivedValuesAndPushFullState(iPlayer);
                 }
             }
             else
@@ -59,6 +66,24 @@ namespace GameLogic
                 server.PushMessage(ref outgoingMessage, targetPlayer);
             }
             else Debug.LogError("Not a serverside entity");
+        }
+        public void RecalculateDerivedValuesAndPushFullState()
+        {
+            RecalculateDerivedValues();
+            if (GameState.NetworkMember is UnityServer server)
+            {
+                foreach (int iPlayer in GameState.Players)
+                {
+                    PushFullState(iPlayer);
+                }
+            }
+            else
+                Debug.LogError("Not a serverside entity");
+        }
+        public void RecalculateDerivedValuesAndPushFullState(int targetPlayer)
+        {
+            RecalculateDerivedValues();
+            PushFullState(targetPlayer);
         }
 
         protected ICollection<(int iPlayer, DataStreamWriter message)> StartCustomUpdates(byte customHeader)
@@ -115,6 +140,7 @@ namespace GameLogic
 
         protected virtual void OnDeactivated() {}
         protected virtual void Init() {}
+        public virtual void OnPlayerCountChanged(int value) {}
         
         protected abstract void ReceiveCustomUpdate(ref DataStreamReader incomingMessage, byte header);
 
@@ -122,9 +148,12 @@ namespace GameLogic
         {
             bool wasActive = Active;
             Active = incomingMessage.ReadByte() == 1;
-            if (Active) ReceiveFullState(ref incomingMessage);
+            ReceiveFullState(ref incomingMessage);
+            RecalculateDerivedValues();
             if (wasActive && !Active) OnDeactivated();
         }
+
+        public virtual void RecalculateDerivedValues() {}
         protected abstract void ReceiveFullState(ref DataStreamReader incomingMessage);
         protected abstract void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage);
         public abstract int HashFullState(int asPlayer);

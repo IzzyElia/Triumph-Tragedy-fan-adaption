@@ -79,13 +79,13 @@ namespace GameSharedInterfaces
             if (Icon is null)
             {
                 Debug.LogWarning($"No icon found for unit type {Name}");
-                Icon = Resources.Load<Texture2D>("Icons/Units/Fallback");
+                Icon = Resources.Load<Texture2D>("Icons/Units/fallback");
             }
             Sprite = Resources.Load<Sprite>($"Icons/Units/{Name}");
             if (Sprite is null)
             {
                 Debug.LogWarning($"No icon found for unit type {Name}");
-                Sprite = Resources.Load<Sprite>("Icons/Units/Fallback");
+                Sprite = Resources.Load<Sprite>("Icons/Units/fallback");
             }
 
             return this;

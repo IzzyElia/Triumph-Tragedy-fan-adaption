@@ -17,10 +17,13 @@ namespace GameBoard
             [SerializeField] public MapBorder target;
             [SerializeField] public bool targetFirstVertex;
         }
+
+        [SerializeField] private bool flipUV;
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshRenderer meshRenderer;
         [SerializeField] public Vector3[] points = new Vector3[0];
         [SerializeField] [HideInInspector] private int prevNumPoints;
+        [SerializeField] private int prevCalculatedWithBorderWidth = -1;
         public List<MapTile> connectedMapTiles = new List<MapTile>();
         public BorderType borderType;
         [SerializeField] private VertexShare shareFirstVertex;
@@ -63,10 +66,15 @@ namespace GameBoard
                 transform.localPosition = center;
             }
 
-            if (markComplete)
+            if (markComplete && prevCalculatedWithBorderWidth == Map.borderMeshWidth)
+            {
                 SetMeshToFlashed();
+            }
             else
+            {
+                prevCalculatedWithBorderWidth = Map.borderMeshWidth;
                 FlashMesh();
+            }
             SetupMaterial();
             EditorUtility.SetDirty(this);
             //Save();
@@ -77,8 +85,67 @@ namespace GameBoard
             SetupMaterial();
         }
 
-        private void SetupMaterial()
+        private static Color _highlightColor = new Color(1f, 1f, 0.6f, 1);
+        private static Color _movementOptionHighlightColor = new Color(0.9f, 0.9f, 0.5f, 1);
+        Color PickHighlightColor(MapTile tile, bool isCountryBorder)
         {
+            switch (tile.HighlightState)
+            {
+                case TileHighlightState.NotHighlighted:
+                    return isCountryBorder ? (tile.mapCountry is not null ? tile.mapCountry.CalculatedColor : Color.clear) : Color.clear;
+                case TileHighlightState.HoverHighlighted:
+                    return _highlightColor;
+                case TileHighlightState.MovementOptionHighlighted:
+                    return _movementOptionHighlightColor;
+                default: throw new NotImplementedException();
+            }
+        }
+        public void RecalculateMaterialRuntimeValues()
+        {
+            Random.InitState(name.GetHashCode());
+            Color lColor = default;
+            Color rColor = default;
+            if (connectedMapTiles.Count == 2 && connectedMapTiles[0].mapCountry != connectedMapTiles[1].mapCountry)
+            {
+                MapTile rTile = flipUV ? connectedMapTiles[0] : connectedMapTiles[1];
+                MapTile lTile = flipUV ? connectedMapTiles[1] : connectedMapTiles[0];
+                rColor = PickHighlightColor(rTile, isCountryBorder:true);
+                lColor = PickHighlightColor(lTile, isCountryBorder:true);
+            }
+            else if (connectedMapTiles.Count == 2) // But they share a country
+            {
+                MapTile rTile = flipUV ? connectedMapTiles[0] : connectedMapTiles[1];
+                MapTile lTile = flipUV ? connectedMapTiles[1] : connectedMapTiles[0];
+                rColor = PickHighlightColor(rTile, isCountryBorder: false);
+                lColor = PickHighlightColor(lTile, isCountryBorder: false);
+            }
+            else if (connectedMapTiles.Count == 1)
+            {
+                MapTile tile = connectedMapTiles[0];
+                Color borderColor = PickHighlightColor(tile, isCountryBorder: false);
+                if (flipUV)
+                {
+                    meshRenderer.material.SetColor("_RBorderColor", borderColor);
+                    meshRenderer.material.SetColor("_LBorderColor", Color.clear);
+                }
+                else
+                {
+                    meshRenderer.material.SetColor("_RBorderColor", Color.clear);
+                    meshRenderer.material.SetColor("_LBorderColor", borderColor);
+                }
+            }
+            else
+            {
+                lColor = Color.clear;
+                rColor = Color.clear;
+            }
+            
+            meshRenderer.material.SetColor("_RBorderColor", rColor);
+            meshRenderer.material.SetColor("_LBorderColor", lColor);
+        }
+        public void SetupMaterial()
+        {
+            
             Random.InitState(name.GetHashCode());
             Material material;
             Color baseColor;
@@ -179,7 +246,7 @@ namespace GameBoard
                     direction = ((points[i + 1] - current) + (current - points[i - 1])).normalized;
                 }
 
-                Vector3 perpendicular = new Vector3(-direction.y, direction.x, 0) * Map.borderMeshWidth / 2;
+                Vector3 perpendicular = new Vector3(-direction.y, direction.x, 0) * (float)Map.borderMeshWidth / 200f;
 
                 Vector3 localPosition = transform.localPosition;
                 vertices[i * 2] = current + perpendicular - localPosition;
@@ -306,10 +373,32 @@ namespace GameBoard
             }
             EditorUtility.SetDirty(this);
         }
-
-        public void RecalculateAppearance()
+        
+        
+        public void CalculateUVDirection()
         {
-            // TODO Implement this
+            if (points.Length < 2 || connectedMapTiles.Count < 1) return;
+            Vector2 A = points[0];
+            Vector2 B = points[^1];
+            Vector2 C = connectedMapTiles[0].transform.localPosition;
+            // Calculate the vector from A to B
+            Vector2 AB = B - A;
+            // Calculate the vector from A to C
+            Vector2 AC = C - A;
+
+            // Calculate the determinant of AB and AC (which is the z-component of the cross product in 3D)
+            float determinant = AB.x * AC.y - AB.y * AC.x;
+
+            // If determinant is positive, C is on the left; if negative, C is on the right
+            if (determinant > 0)
+            {
+                flipUV = false;
+            }
+            else
+            {
+                flipUV = true;
+            }
+            EditorUtility.SetDirty(this);
         }
     }
 

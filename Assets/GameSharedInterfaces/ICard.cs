@@ -7,7 +7,7 @@ namespace GameSharedInterfaces
         Action,
         Investment
     }
-    public interface ICard //: IGameEntity
+    public interface ICard : IGameEntity
     {
         int HoldingPlayer { get; }
         CardType CardType { get; }

@@ -37,6 +37,7 @@ namespace Game_Logic.TriumphAndTragedy
             cadre.Tile = gameState.GetOrCreateEntity<GameTile>(iTile);
             ((TTGameState)gameState).CadresByTileID.Add(iTile, cadre);
             cadre.Active = true;
+            cadre.RecalculateDerivedValues();
             return cadre;
         }
         public void Kill ()
@@ -45,7 +46,7 @@ namespace Game_Logic.TriumphAndTragedy
             ((TTGameState)GameState).CadresByTileID.Remove_CertainOfKey(_iTile, this);
             ((TTGameState)GameState).FreedCadreIDs.Enqueue(this.ID);
             Active = false;
-            PushFullState();
+            RecalculateDerivedValuesAndPushFullState();
         }
 
         protected override void OnDeactivated()
@@ -64,7 +65,7 @@ namespace Game_Logic.TriumphAndTragedy
         }
 
         public int iUnitType;
-        public UnitType UnitType => iUnitType == UnitHidden ? null : GameState.Ruleset.UnitTypes[iUnitType];
+        public UnitType UnitType => iUnitType == UnitHidden ? null : GameState.Ruleset.unitTypes[iUnitType];
         public bool UnitTypeIsHidden => iUnitType == UnitHidden;
         
         public int iCountry;
@@ -74,7 +75,7 @@ namespace Game_Logic.TriumphAndTragedy
             set => iCountry = value.ID;
         }
 
-        private int _iTile = -1;
+        private int _iTile;
 
         public int iTile
         {
@@ -82,13 +83,13 @@ namespace Game_Logic.TriumphAndTragedy
             set
             {
                 if (iTile != -1) ((TTGameState)GameState).CadresByTileID.Remove(_iTile, this);
-                ((TTGameState)GameState).CadresByTileID.Add(value, this);
+                if (value != -1) ((TTGameState)GameState).CadresByTileID.Add(value, this);
                 _iTile = value;
             }
         }
         public GameTile Tile
         {
-            get => ((TTGameState)GameState).GetOrCreateEntity<GameTile>(iTile);
+            get => ((TTGameState)GameState).GetEntity<GameTile>(iTile);
             set
             {
                 if (iTile != -1) ((TTGameState)GameState).CadresByTileID.Remove(iTile, this);
@@ -97,7 +98,13 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
         public byte Pips;
+        public byte MaxPips;
         public GameFaction Faction => Country.Faction;
+
+        protected override void Init()
+        {
+            iTile = -1;
+        }
 
         public bool IsRevealedTo(int iPlayer)
         {
@@ -115,6 +122,8 @@ namespace Game_Logic.TriumphAndTragedy
                 {
                     message.WriteUShort((ushort)path[i]);
                 }
+
+                Tile = GameState.GetEntity<GameTile>(path[^1]);
                 PushCustomUpdate(iPlayer, ref message);
             }
         }
@@ -129,6 +138,8 @@ namespace Game_Logic.TriumphAndTragedy
                     {
                         path[i] = (int)incomingMessage.ReadUShort();
                     }
+
+                    Tile = GameState.GetEntity<GameTile>(path[^1]);
                     MapCadre.AnimateMovement(path);
                     break;
             }
@@ -138,17 +149,13 @@ namespace Game_Logic.TriumphAndTragedy
         {
             iUnitType = incomingMessage.ReadInt();
             Pips = incomingMessage.ReadByte();
+            MaxPips = incomingMessage.ReadByte();
             iCountry = incomingMessage.ReadInt();
             iTile = incomingMessage.ReadInt();
-
-            Debug.Log(message:
-                $"iTile = {iTile}\n" +
-                $"Pips = {Pips}\n" +
-                $"iCountry = {iCountry}\n" +
-                $"id = {ID}");
+            
             MapTile tile = MapRenderer.MapTilesByID[iTile];
             MapCountry country = MapRenderer.MapCountriesByID[iCountry];
-            UnitType unitType = iUnitType != byte.MaxValue ? GameState.Ruleset.UnitTypes[iUnitType] : UnitType.Unknown;
+            UnitType unitType = iUnitType != byte.MaxValue ? GameState.Ruleset.unitTypes[iUnitType] : UnitType.Unknown;
             if (MapCadre is null)
             {
                 try
@@ -171,19 +178,33 @@ namespace Game_Logic.TriumphAndTragedy
                 MapCadre.MapCountry = country;
                 MapCadre.Tile = tile;
                 MapCadre.UnitType = unitType;
+                MapCadre.MaxPips = MaxPips;
                 MapCadre.Pips = Pips;
             }
         }
 
         protected override void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage)
         {
+            // Note the differing serialization depending on whether the unit is revealed
+            // Any changes need to be made to both sides
             if (IsRevealedTo(targetPlayer))
+            {
                 outgoingMessage.WriteInt(iUnitType);
+                outgoingMessage.WriteByte(Pips);
+                outgoingMessage.WriteByte(MaxPips);
+                outgoingMessage.WriteInt(iCountry);
+                outgoingMessage.WriteInt(iTile);
+            }
             else
-                outgoingMessage.WriteInt(byte.MaxValue);
-            outgoingMessage.WriteByte(Pips);
-            outgoingMessage.WriteInt(iCountry);
-            outgoingMessage.WriteInt(iTile);
+            {
+                outgoingMessage.WriteInt(byte.MaxValue); // Unknown unit type
+                outgoingMessage.WriteByte(0);
+                outgoingMessage.WriteByte(0);
+                outgoingMessage.WriteInt(iCountry);
+                outgoingMessage.WriteInt(iTile);
+            }
+                
+
         }
 
         public override int HashFullState(int asPlayer)
@@ -195,7 +216,7 @@ namespace Game_Logic.TriumphAndTragedy
                     hash *= iUnitType.GetHashCode();
                 else
                     hash *= -2.GetHashCode();
-                hash *= HashCode.Combine(iTile, iCountry, Pips);
+                hash *= HashCode.Combine(iTile, iCountry, Pips, MaxPips);
             }
 
             return hash;

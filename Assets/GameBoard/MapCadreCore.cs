@@ -13,6 +13,7 @@ namespace GameBoard
         
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshRenderer meshRenderer;
+        [SerializeField] private PipsManager pipsManager;
         public Vector3 Destination;
 
         private void Start()
@@ -42,6 +43,8 @@ namespace GameBoard
             }
         }
 
+        public Vector3 TokenPosition => _animatingMovement ? Destination : transform.position;
+
         protected UnitType  _unitType;
         public UnitType UnitType
         {
@@ -53,14 +56,40 @@ namespace GameBoard
             }
         }
         
-        protected int  _pips;
         public int Pips
         {
-            get => _pips;
+            get => pipsManager.pips;
             set
             {
-                _pips = value;
-                RecalculateAppearance();
+                if (value != pipsManager.pips)
+                {
+                    pipsManager.SetPips(value);
+                    RecalculateAppearance();
+                }
+            }
+        }
+        public int ProjectedPips
+        {
+            get => pipsManager.projectedPips;
+            set
+            {
+                if (value != pipsManager.projectedPips)
+                {
+                    pipsManager.SetProjectedPips(value);
+                    RecalculateAppearance();
+                }
+            }
+        }
+        public int MaxPips
+        {
+            get => pipsManager.maxPips;
+            set
+            {
+                if (value != pipsManager.maxPips)
+                {
+                    pipsManager.SetMaxPips(value);
+                    RecalculateAppearance();
+                }
             }
         }
 
@@ -159,7 +188,7 @@ namespace GameBoard
 
                     foreach (IMapToken token in tileTokens)
                     {
-                        float distance = Vector3.Distance(point, token.transform.position) / tokenAvoidanceWeight;
+                        float distance = Vector3.Distance(point, token.TokenPosition) / tokenAvoidanceWeight;
                         if (distance < closestObjDistance)
                         {
                             closestObjDistance = distance;
@@ -205,10 +234,11 @@ namespace GameBoard
             RecalculateAppearance();
         }
 
+        private bool _animatingMovement;
         protected override void OnTileChanged(MapTile tile)
         {
             base.OnTileChanged(tile);
-            transform.position = ChoosePosition(tile);
+            if (!_animatingMovement) transform.position = ChoosePosition(tile);
         }
 
 
@@ -220,13 +250,17 @@ namespace GameBoard
         private float BaseZSize => baseScale * ZFactor;
         private float ZSize => ActualScale * ZFactor;
         public SelectionStatus HoveredOver { get; set; }
+        public bool Darken;
+        protected bool UseGhostMaterial;
 
         private Queue<int> movementQueue = new Queue<int>();
         public void AnimateMovement(int[] path)
         {
-            // TODO full movement animation
+            _animatingMovement = true;
             int iTile = path[^1];
-            Destination = ChoosePosition(Map.MapTilesByID[iTile], true);
+            MapTile tile = Map.MapTilesByID[iTile];
+            Destination = ChoosePosition(tile, true);
+            Tile = tile;
             SetAnimated(true);
         }
         
@@ -252,7 +286,7 @@ namespace GameBoard
             }
             
             _momentum = Mathf.Min(_momentum + 0.003f, MaxMomentum);
-            transform.localPosition = Vector3.Lerp(transform.localPosition, Destination, _momentum);
+            transform.position = Vector3.Lerp(transform.position, Destination, _momentum);
             
             if (!StillNeedsAnimation)
             {
@@ -284,21 +318,36 @@ namespace GameBoard
             transform.localScale = new Vector3(ActualScale, ActualScale, ZSize);
             if (MapCountry is not null)
             {
-                meshRenderer.sharedMaterial = MapCountry.GetMaterialForCadreUnitType(UnitType);
+                meshRenderer.sharedMaterial = MapCountry.GetMaterialForCadreUnitType(UnitType, UseGhostMaterial);
             }
 
-            if (Map.SelectedObject == this)
+            if (Darken)
+                meshRenderer.material.SetColor("_BaseColor", Color.gray);
+            else meshRenderer.material.SetColor("_BaseColor", Color.white);
+
+            if (Map.SelectedObjects.Contains(this) || Map.HoveredMapObject == this)
             {
                 meshRenderer.material.SetInt("_Highlighted", 1);
-            }
-            else if (Map.HoveredMapObject == this)
-            {
-                meshRenderer.material.SetInt("_Highlighted", 1);
+                if (Map.GameState.GamePhase == GamePhase.Production &&
+                    Map.GameState.ActivePlayer == Map.GameState.iPlayer &&
+                    Map.HoveredMapObject == this)
+                {
+                    meshRenderer.material.SetInt("_ShowAddPipsOverlay", 1);
+                    meshRenderer.material.SetInt("_AddPipsOverlayIsPositive",
+                        Map.UIController.ModifierInputStatus == InputStatus.Held ||
+                        Map.UIController.ModifierInputStatus == InputStatus.Pressed
+                            ? 0
+                            : 1);
+                    meshRenderer.material.SetInt("_AddPipsOverlayIsHighlighted", 1);
+                }
             }
             else
             {
                 meshRenderer.material.SetInt("_Highlighted", 0);
+                meshRenderer.material.SetInt("_ShowAddPipsOverlay", 0);
             }
         }
+
+        public override bool IsSelectable => true;
     }
 }

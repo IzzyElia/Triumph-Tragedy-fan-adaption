@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GameBoard.UI.SpecializeComponents;
 using GameSharedInterfaces;
 using TMPro;
 using UnityEngine;
@@ -7,142 +8,232 @@ using UnityEngine.UI;
 
 namespace GameBoard.UI
 {
-    public class UIInvestmentCard : UICard
-    {
-        public static UIInvestmentCard Create(int iCard, UICardHand hand, GameObject cardPrefab)
-        {
-            UIInvestmentCard card = Instantiate(hand.CardPreviewPrefab).GetComponent<UIInvestmentCard>();
-            if (card is null) Debug.LogError("UIInvestmentCard prefab does not have a UIInvestmentCard component");
-            card.Init(iCard:iCard, hand:hand, CardType.Investment);
-            return card;
-        }
-    }
-
-    public class UIActionCard : UICard
-    {
-        public static UIActionCard Create(int iCard, UICardHand hand, GameObject cardPrefab)
-        {
-            UIActionCard card = Instantiate(hand.CardPreviewPrefab).GetComponent<UIActionCard>();
-            if (card is null) Debug.LogError("UIActionCard prefab does not have a UIActionCard component");
-            card.Init(iCard:iCard, hand:hand, CardType.Action);
-            
-            return card;
-        }
-        
-        // Utility
-        static string NumberToLetter(byte number)
-        {
-            switch (number)
-            {
-                case 0: return "A";
-                case 1: return "B";
-                case 2: return "C";
-                case 3: return "D";
-                case 4: return "E";
-                case 5: return "F";
-                case 6: return "G";
-                case 7: return "H";
-                case 8: return "I";
-                case 9: return "J";
-                case 10: return "K";
-                case 11: return "L";
-                case 12: return "M";
-                case 13: return "N";
-                case 14: return "O";
-                case 15: return "P";
-                case 16: return "Q";
-                case 17: return "R";
-                case 18: return "S";
-                case 19: return "T";
-                case 20: return "U";
-                case 21: return "V";
-                case 22: return "W";
-                case 23: return "X";
-                case 24: return "Y";
-                case 25: return "Z";
-                default: throw new ArgumentOutOfRangeException(nameof(number), "Value must be between 0 and 25.");
-            }
-        }
-    }
-
-    public class UICardPreview : UICard
-    {
-        public static UICardPreview Create(UICardHand hand, CardType cardType)
-        {
-            UICardPreview card = Instantiate(hand.CardPreviewPrefab).GetComponent<UICardPreview>();
-            if (card is null) Debug.LogError("UICardPreview prefab does not have a UICardPreview component");
-            card.Init(iCard:-1, hand:hand, cardType);
-            
-            return card;
-        }
-
-        protected override void Refresh()
-        {
-            base.Refresh();
-            switch (CardType)
-            {
-                case CardType.Action: BackdropImage.sprite = CardHand.ActionCardBack; return;
-                case CardType.Investment: BackdropImage.sprite = CardHand.InvestmentCardBack; return;
-                default: BackdropImage.sprite = CardHand.UniversalCardBack; Debug.LogError($"No card back for card type {CardType}"); return;
-            }
-        }
-    }
-    
     [RequireComponent(typeof(Image))]
     public class UICard : UIComponent
     {
-        public void Init(int iCard, UICardHand hand, CardType cardType)
+        public static T Create<T>(GameObject cardPrefab, UICardHand cardHand) where T : UICard
         {
-            this._cardID = iCard;
-            this.CardHand = hand;
-            this.BackdropImage = GetComponent<Image>();
-            Refresh();
+            T uiCard = Instantiate(cardPrefab).GetComponent<T>();
+            cardHand.UIController.RegisterUIComponent(uiCard);
+            uiCard.transform.SetParent(cardHand.transform);
+            uiCard.CardHand = cardHand;
+            return uiCard;
+        }
+        
+        void Awake()
+        {
+            if (BackdropImage is null) Debug.LogError($"Backdrop image unset in {name}");
+            if (overlayImage is null) Debug.LogError($"Overlay image unset in {name}");
+            if (outlineImage is null) Debug.LogError($"Outline image unset in {name}");
+            overlayBaseColor = overlayImage.color;
+            outlineBaseColor = outlineImage.color;
+            if (!(this is UICardPreview))
+            {
+                if (cardEffectWrapper is not null) _cardEffectWrapperRectTransformProperties = new RectTransformProperties(cardEffectWrapper);
+                if (cardMainEffectWrapper is not null) _cardMainEffectWrapperRectTransformProperties = new RectTransformProperties(cardMainEffectWrapper);
+            }
         }
         
         [SerializeField] public RectTransform rectTransform;
-        protected Image BackdropImage;
-        [SerializeField] private List<TextMeshProUGUI> mainTexts;
-        [SerializeField] private GameObject cardEffectWrapper;
-        private List<GameObject> cardEffects;
+        [SerializeField] protected Image BackdropImage;
+        [SerializeField] private Image overlayImage;
+        private Color overlayBaseColor;
+        [SerializeField] private Image outlineImage;
+        [SerializeField] private Color outlineImageHighlightColor;
+        private Color outlineBaseColor;
+        public RectTransform cardEffectWrapper;
+        private RectTransformProperties _cardEffectWrapperRectTransformProperties;
+        public RectTransform cardMainEffectWrapper;
+        private RectTransformProperties _cardMainEffectWrapperRectTransformProperties;
+        public List<UICardEffect> CardEffects = new List<UICardEffect>();
         private int _cardID;
         public CardType CardType;
         public ICard Card;
+        public CardHighlightState HighlightState;
+        public bool InPlayArea => CardHand.CardsInPlayArea.Contains(this);
 
         public int cardID
         {
             get => _cardID;
-            set
-            {
-                _cardID = value;
-                Refresh();
-            }
         }
         private bool held;
         [NonSerialized] public UICardHand CardHand;
         
-        
-        protected virtual void Refresh()
+        public void CalculateHighlightStatus(CardplayInfo cardplayInfo)
         {
-            if (_cardID != -1)
+            if (cardplayInfo.TargetType == CardEffectTargetSelectionType.None)
             {
-                Card = MapRenderer.GameState.GetCard(_cardID, CardType);
+                if (CardHand.HeldCard == this || CardHand.HoveredCard == this) HighlightState = CardHighlightState.Highlight;
+                else HighlightState = CardHighlightState.Neutral;
+            }
+            else if (!CardHand.CardsInPlayArea.Contains(this))
+            {
+                HighlightState = CardHighlightState.Darken;
+            }
+            
+            switch (HighlightState)
+            {
+                case CardHighlightState.Neutral:
+                    outlineImage.color = outlineBaseColor;
+                    overlayImage.color = overlayBaseColor;
+                    break;
+                case CardHighlightState.Darken:
+                    outlineImage.color = outlineBaseColor;
+                    overlayImage.color = new Color(overlayBaseColor.r, overlayBaseColor.g, overlayBaseColor.b, 0.5f);
+                    break;
+                case CardHighlightState.Highlight:
+                    outlineImage.color = outlineImageHighlightColor;
+                    overlayImage.color = overlayBaseColor;
+                    break;
             }
         }
+
+        protected void ClearCardEffects()
+        {
+            for (int i = 0; i < CardEffects.Count; i++)
+            {
+                CardEffects[i].DestroyUIComponent();
+            }
+            CardEffects.Clear();
+        }
+        protected UICardEffect InstantiateCardEffect(GameObject prefab, bool isMainEffect = false)
+        {
+            UICardEffect cardEffect = Instantiate(prefab).GetComponent<UICardEffect>();
+            cardEffect.Card = this;
+            UIController.RegisterUIComponent(cardEffect);
+            if (isMainEffect)
+            {
+                cardEffect.transform.SetParent(cardMainEffectWrapper.transform);
+            }
+            else
+            {
+                cardEffect.transform.SetParent(cardEffectWrapper.transform);
+            }
+            CardEffects.Add(cardEffect);
+            return cardEffect;
+        }
         
-        
+        public virtual void Refresh(ICard gameCard)
+        {
+            if (gameCard != null)
+            {
+                _cardID = gameCard.ID;
+                CardType = gameCard.CardType;
+                Card = gameCard;
+            }
+        }
+
         public override void OnGamestateChanged()
         {
-            Refresh();
+            // Handled by UICardHand
         }
 
         public override void OnResyncEnded()
         {
-            Refresh();
+            //Handled by UICardHand
         }
+
+        public void OnMovedToPlayArea()
+        {
+            /* Commented because it also needs to work for main effects
+            if (CardHand.SelectingCardEffect)
+            {
+                SetAnchors(cardTextArea, new Vector2(cardTextArea.anchorMin.x, 1), new Vector2(cardTextArea.anchorMax.x, 1));
+                SetAnchors(cardEffectWrapper, new Vector2(0, 0), new Vector2(1, 1));
+                _animatingAreaSizes = true;
+                _animationTimer = AnimationTime;
+            }
+            */
+        }
+        public void OnMovedToHand()
+        {
+            SetAnchors(cardMainEffectWrapper, _cardMainEffectWrapperRectTransformProperties.AnchorMin,
+                _cardMainEffectWrapperRectTransformProperties.AnchorMax);
+            SetAnchors(cardEffectWrapper, _cardEffectWrapperRectTransformProperties.AnchorMin, _cardEffectWrapperRectTransformProperties.AnchorMax);
+            _animatingAreaSizes = true;
+            _animationTimer = AnimationTime;
+        }
+
 
         public override void UIUpdate()
         {
+            // If restoring animation, make sure to set SetAnchors() default of preserveSize to true
+            //HandleAnimation()
+        }
+        private bool _animatingAreaSizes = false;
+        private int _animationTimer = 0;
+        private const int AnimationTime = 30;
+        void HandleAnimation()
+        {
+            if (_animatingAreaSizes)
+            {
+                float t = Time.deltaTime * CardHand.CardMovementSpeed;
+                _animationTimer--;
+                if (_animationTimer < 0)
+                {
+                    _animatingAreaSizes = false;
+                    t = 1;
+                }
+                if (CardHand.CardsInPlayArea.Contains(this))
+                {
+                    LerpRect(cardMainEffectWrapper, 
+                        new Vector2(
+                            0,
+                            0
+                        ),
+                        new Vector2(
+                            0,
+                            0
+                        ),
+                        t
+                    );
+                    LerpRect(cardEffectWrapper, 
+                        new Vector2(
+                            0,
+                            0
+                        ),
+                        new Vector2(
+                            0,
+                            0
+                        ),
+                        t
+                    );
+                    
+                }
+                else
+                {
+                    LerpRect(cardMainEffectWrapper, 
+                        _cardMainEffectWrapperRectTransformProperties.OffsetMin, 
+                        _cardMainEffectWrapperRectTransformProperties.OffsetMax, t);
+                    LerpRect(cardEffectWrapper, 
+                        _cardEffectWrapperRectTransformProperties.OffsetMin, 
+                        _cardEffectWrapperRectTransformProperties.OffsetMax,
+                        t);
+                }
+            }
+        }
+        public void SetAnchors(RectTransform rectTransform, Vector2 newAnchorMin, Vector2 newAnchorMax, bool preserveSize = false)
+        {
+            var OriginalPosition = rectTransform.localPosition;
+            var OriginalSize = rectTransform.sizeDelta;
+
+            rectTransform.anchorMin = newAnchorMin;
+            rectTransform.anchorMax = newAnchorMax;
+
+            if (preserveSize)
+            {
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, OriginalSize.x);
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, OriginalSize.y);
+                rectTransform.localPosition = OriginalPosition;
+            }
             
+
+
+        }
+        void LerpRect(RectTransform rectTransform, Vector2 preferredOffsetMin, Vector2 preferredOffsetMax, float t)
+        {
+            rectTransform.offsetMin = Vector2.Lerp(rectTransform.offsetMin, preferredOffsetMin, t);
+            rectTransform.offsetMax = Vector2.Lerp(rectTransform.offsetMax, preferredOffsetMax, t);
         }
     }
 }

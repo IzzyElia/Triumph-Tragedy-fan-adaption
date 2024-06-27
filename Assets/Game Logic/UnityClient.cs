@@ -4,6 +4,7 @@ using Game_Logic.TriumphAndTragedy;
 using GameBoard;
 using GameBoard.UI;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Relay;
@@ -36,6 +37,10 @@ namespace GameLogic
         public UnityClient(ushort port = NetProtocol.DefaultPort) : base (new TTGameState(), port)
         {
             NetworkSettings networkSettings = new NetworkSettings();
+            networkSettings.WithNetworkConfigParameters(
+                heartbeatTimeoutMS:int.MaxValue, // No timeout
+                reconnectionTimeoutMS:int.MaxValue
+            );
             _networkDriver = NetworkDriver.Create(networkSettings);
             NetworkEndpoint endpoint = NetworkEndpoint.AnyIpv4.WithPort(port);
             if (_networkDriver.Bind(endpoint) != 0)
@@ -103,7 +108,7 @@ namespace GameLogic
                 _networkDriver.BeginSend(_connection, out DataStreamWriter outgoingMessage);
                 outgoingMessage.WriteByte(NetProtocol.SyncCheckResponse);
                 outgoingMessage.WriteInt(GameState.GetStateHash(GameState.iPlayer, "ClientHashLog.txt"));
-                NetworkingLog("Checking whether in sync...");
+                NetworkingLog("Checking whether in sync...", DebuggingLevel.IndividualMessages);
                 _networkDriver.EndSend(outgoingMessage);
             }
         }
@@ -132,6 +137,7 @@ namespace GameLogic
             GameState.Ruleset = ruleset;
             UIController uiController = UIController.Create(map);
             GameState.UIController = uiController;
+            map.UIController = uiController;
             NetworkingLog("initialized for game start and ready for sync");
         }
 

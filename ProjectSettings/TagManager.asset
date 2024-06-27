@@ -6,6 +6,8 @@ TagManager:
   tags:
   - UICard
   - UICardRegion
+  - UICardPlayPanel
+  - UICardEffect
   layers:
   - Default
   - TransparentFX
@@ -42,4 +44,10 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: HolographicUIBackground
+    uniqueID: 3863676315
+    locked: 0
+  - name: HolographicUIForeground
+    uniqueID: 3067228631
     locked: 0

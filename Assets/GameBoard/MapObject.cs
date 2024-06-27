@@ -1,20 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using GameSharedInterfaces;
 using UnityEditor;
 using UnityEngine;
 
 namespace GameBoard
 {
-    public enum AnimationState
-    {
-        Continue,
-        Exit,
-    }
     [ExecuteAlways]
     public abstract class MapObject : MonoBehaviour
     {
-        public int ID;
+        public int ID = -1;
+        public bool IsDestroyed { get; private set; } = false;
         [SerializeField] private Map _map;
         public Map Map
         {
@@ -51,13 +48,20 @@ namespace GameBoard
         private bool _supressDestroyWarning = false;
         public void DestroyMapObject()
         {
+            foreach (var mapObject in GetComponentsInChildren<MapObject>(includeInactive:true))
+            {
+                if (mapObject != this) mapObject.DestroyMapObject();
+            }
             _supressDestroyWarning = true;
+            Map.UIController.ScrubQueue.Add(this);
             Deregister();
+            IsDestroyed = true;
             Destroy(this.gameObject);
+            Destroy(this);
         }
         private void OnDestroy()
         {
-            if (!_supressDestroyWarning) Debug.LogError("Map objects should be destroyed by calling MapObject.Destroy, not MonoBehavior.Destroy()");
+            if (!_supressDestroyWarning && !SharedData.SupressDestroyWarningGlobally && !Application.isEditor) Debug.LogError($"{GetType().Name} destroyed incorrectly!. Map objects should be destroyed by calling MapObject.Destroy, not MonoBehavior.Destroy()");
         }
 
         private bool registeredForAnimation = false;
@@ -111,5 +115,7 @@ namespace GameBoard
         {
             
         }
+
+        public virtual bool IsSelectable => false;
     }
 }

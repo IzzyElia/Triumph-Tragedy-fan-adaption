@@ -28,7 +28,7 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 GameTile tile = GameState.GetEntity<GameTile>(iTile);
                 GameCadre cadre = GameCadre.CreateCadre(GameState, unitType, iCountry, iTile);
-                cadre.PushFullState();
+                cadre.RecalculateDerivedValuesAndPushFullState();
             }
 
             GameState.PlayerCommitted[iPlayerFaction] = true;
@@ -65,8 +65,8 @@ namespace Game_Logic.TriumphAndTragedy
             }
             foreach ((int iTile, byte iUnitType, int iCountry, byte pips) in buildsToTest)
             {
-                if (iUnitType < 0 || iUnitType >= GameState.Ruleset.UnitTypes.Length) return (false, "Not all units placed");
-                UnitType unitType = GameState.Ruleset.UnitTypes[iUnitType];
+                if (iUnitType < 0 || iUnitType >= GameState.Ruleset.unitTypes.Length) return (false, "Not all units placed");
+                UnitType unitType = GameState.Ruleset.unitTypes[iUnitType];
                 if (pips != 1) return (false, "Starting cadres may only be one pip strong");
                 if (iTile < 0 || iTile >= GameState.MaxEntityID<GameTile>()) return (false, "Invalid tile id");
                 if (!unitType.IsBuildableThroughNormalPlacementRules) return (false, "Unit type cannot be placed manually");
@@ -92,6 +92,11 @@ namespace Game_Logic.TriumphAndTragedy
             throw new NotImplementedException();
         }
 
+        public override bool RemoveParameter(params object[] parameter)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <param name="parameters">
         /// Parameters format is an array of units, each entry declaring the tile, unit type, country, and starting pips - (int iTile, byte unitType, int iCountry, byte pipsToAdd)[]
         /// </param>
@@ -103,6 +108,11 @@ namespace Game_Logic.TriumphAndTragedy
         public override object[] GetParameters()
         {
             return new object[] { _builds };
+        }
+
+        public override object[] GetData()
+        {
+            throw new NotImplementedException();
         }
 
         public override (bool, string) Validate() => AreBuildsValid(_builds);

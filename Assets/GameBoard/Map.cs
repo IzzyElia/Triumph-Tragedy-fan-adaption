@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GameSharedInterfaces;
-using JetBrains.Annotations;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
-using UnityEngine.Serialization;
-using Random = UnityEngine.Random;
 
 namespace GameBoard
 {
@@ -41,15 +39,15 @@ namespace GameBoard
         private bool _bordersRecalculationCalled = false;
         private bool _objectListRecalculationCalled = false;
         public Mesh fallbackMapTileMesh;
-        public float borderMeshWidth;
+        public int borderMeshWidth;
         public int MaxCadres = byte.MaxValue;
         [NonSerialized] public ITTGameState GameState;
-        public IRuleset Ruleset => GameState.Ruleset;
+        public Ruleset Ruleset => GameState.Ruleset;
+
         public Mesh CadreBlockMesh;
-        [NonSerialized] public MapObject SelectedObject; // Set by UIController
+        [NonSerialized] public List<MapObject> SelectedObjects = new List<MapObject>(); // Set by UIController
         [NonSerialized] public MapObject HoveredMapObject;
-        [NonSerialized] public MapTile HoveredOverTile; // Set by UIController
-        [NonSerialized] public SelectionStatus SelectionStatus; // Set by UIController
+        [NonSerialized] public IUIController UIController;
 
 
 
@@ -57,6 +55,7 @@ namespace GameBoard
         {
             CadreBlockMesh = Resources.Load<Mesh>("Meshes/CadreBlock");
             MapCadresByID = new MapCadre[MaxCadres];
+            // MapFactionsByID = new MapFaction[] // Set in TTGameState when building the map
             RecalculateMapObjectLists();
         }
         private void OnValidate()
@@ -112,7 +111,7 @@ namespace GameBoard
             {
                 MapCadre cadre = MapCadresByID[id];
                 MapCadresByID[id] = null;
-                Destroy(cadre.gameObject);
+                cadre.DestroyMapObject();
             }
             catch (KeyNotFoundException e)
             {
@@ -172,7 +171,6 @@ namespace GameBoard
         void RecalculateMapObjectLists()
         {
             MapObjects.Clear();
-            MapObjects.Clear();
             MapTokens.Clear();
             List<MapTile> indexedMapTiles = new List<MapTile>();
             List<MapCountry> indexedMapCountries = new List<MapCountry>();
@@ -198,6 +196,10 @@ namespace GameBoard
                     mapCountry.faction = faction;
                     indexedMapCountries.Add(mapCountry);
                 }
+                else if (mapObject is MapFaction mapFaction)
+                {
+                    Debug.LogError($"Map Faction in Map File ({mapFaction.name}). Factions should be created through the scenario file, not on the map directly");
+                }
 
             }
 
@@ -222,7 +224,7 @@ namespace GameBoard
 
         private void Update()
         {
-            foreach (var mapObject in ObjectsNeedingAnimation)
+            foreach (var mapObject in new List<MapObject>(ObjectsNeedingAnimation))
             {
                 mapObject.Animate();
             }
@@ -321,13 +323,13 @@ namespace GameBoard
                     }
                 }
             }
-
             
             if (_fullRecalculationCalled)
             {
                 // TEMP - auto-set border types
                 foreach (MapBorder border in MapBordersByID)
                 {
+                    //border.CalculateUVDirection();
                     if (border.connectedMapTiles.Count != 2)
                     {
                         border.borderType = BorderType.Impassable;
@@ -337,16 +339,16 @@ namespace GameBoard
                     MapTile firstTile = border.connectedMapTiles[0];
                     MapTile secondTile = border.connectedMapTiles[1];
                     // Is it impassible?
-                    if (firstTile.terrainType == MapTile.TerrainType.NotInPlay ||
-                        secondTile.terrainType == MapTile.TerrainType.NotInPlay)
+                    if (firstTile.terrainType == TerrainType.NotInPlay ||
+                        secondTile.terrainType == TerrainType.NotInPlay)
                     {
                         border.borderType = BorderType.Impassable;
                         continue;
                     }
                     
                     // Is it a strait?
-                    if (firstTile.terrainType == MapTile.TerrainType.Strait ||
-                        secondTile.terrainType == MapTile.TerrainType.Strait)
+                    if (firstTile.terrainType == TerrainType.Strait ||
+                        secondTile.terrainType == TerrainType.Strait)
                     {
                         border.borderType = BorderType.Strait;
                         continue;
@@ -354,8 +356,8 @@ namespace GameBoard
                     
                     // Is it water-to-water?
                     if (
-                        (firstTile.terrainType == MapTile.TerrainType.Sea || firstTile.terrainType == MapTile.TerrainType.Ocean) &&
-                        (secondTile.terrainType == MapTile.TerrainType.Sea || secondTile.terrainType == MapTile.TerrainType.Ocean))
+                        (firstTile.terrainType == TerrainType.Sea || firstTile.terrainType == TerrainType.Ocean) &&
+                        (secondTile.terrainType == TerrainType.Sea || secondTile.terrainType == TerrainType.Ocean))
                     {
                         border.borderType = BorderType.Sea;
                         continue;
@@ -364,20 +366,24 @@ namespace GameBoard
                     // Is it a coast?
                     if (
                             (
-                                (firstTile.terrainType == MapTile.TerrainType.Sea || firstTile.terrainType == MapTile.TerrainType.Ocean) 
+                                (firstTile.terrainType == TerrainType.Sea || firstTile.terrainType == TerrainType.Ocean) 
                                 &&
-                                (secondTile.terrainType != MapTile.TerrainType.Sea && secondTile.terrainType != MapTile.TerrainType.Ocean)
+                                (secondTile.terrainType != TerrainType.Sea && secondTile.terrainType != TerrainType.Ocean)
                             )
                             ||
                             (
-                                (firstTile.terrainType != MapTile.TerrainType.Sea && firstTile.terrainType != MapTile.TerrainType.Ocean) 
+                                (firstTile.terrainType != TerrainType.Sea && firstTile.terrainType != TerrainType.Ocean) 
                                 &&
-                                (secondTile.terrainType == MapTile.TerrainType.Sea || secondTile.terrainType == MapTile.TerrainType.Ocean)
+                                (secondTile.terrainType == TerrainType.Sea || secondTile.terrainType == TerrainType.Ocean)
                                 
                             )
                         )
                     {
                         border.borderType = BorderType.Coast;
+                        firstTile.IsCoastal = (firstTile.terrainType == TerrainType.Land ||
+                                               firstTile.terrainType == TerrainType.Strait);
+                        secondTile.IsCoastal = (secondTile.terrainType == TerrainType.Land ||
+                                                secondTile.terrainType == TerrainType.Strait);
                         continue;
                     }
                     
@@ -411,6 +417,26 @@ namespace GameBoard
         {
             MapObjects.Add(mapObject);
 
+            if (mapObject is MapCadre cadre)
+            {
+                if (cadre.ID == -1) Debug.LogError("cadre ID should be set BEFORE registering");
+                if (MapCadresByID[cadre.ID] is not null) Debug.LogError("Two map cadres are trying to share the same ID");
+                MapCadresByID[cadre.ID] = cadre;
+            }
+
+            if (mapObject is MapFaction faction)
+            {
+                if (faction.ID == -1) Debug.LogError("faction ID should be set BEFORE registering");
+                if (MapFactionsByID[faction.ID] is not null) Debug.LogError("Two map factions are trying to share the same ID");
+                MapFactionsByID[faction.ID] = faction;
+            }
+            
+            if (mapObject is MapCountry country)
+            {
+                if (MapCountriesByID[country.ID] is not null) Debug.LogError("Two map countries are trying to share the same ID");
+                MapCountriesByID[country.ID] = country;
+            }
+
             if (mapObject is IMapToken mapToken)
             {
                 MapTokens.Add(mapToken);
@@ -429,6 +455,11 @@ namespace GameBoard
             if (mapObject is MapFaction faction)
             {
                 MapFactionsByID[faction.ID] = null;
+            }
+            
+            if (mapObject is MapCountry country)
+            {
+                MapCountriesByID[country.ID] = null;
             }
 
             if (mapObject is IMapToken mapToken)
@@ -453,7 +484,18 @@ namespace GameBoard
         {
             foreach (var mapCountry in MapCountriesByID)
             {
+                mapCountry.RecalculateColor(alsoRecalculateBorders:false);
                 mapCountry.RecalculateFlag();
+            }
+
+            foreach (var mapTile in MapTilesByID)
+            {
+                mapTile.RecalculateMaterialDuringRuntime();
+            }
+
+            foreach (var mapBorder in MapBordersByID)
+            {
+                mapBorder.RecalculateMaterialRuntimeValues();
             }
 
             foreach (var mapCadre in MapCadresByID)
@@ -461,5 +503,38 @@ namespace GameBoard
                 if (mapCadre is not null) mapCadre.RecalculateAppearance();
             }
         }
+
+        public MapTile GetTileByName(string name)
+        {
+            int iMapTile = -1;
+            for (int k = 0; k < MapTilesByID.Length; k++)
+            {
+                if (MapTilesByID[k].name == name)
+                {
+                    iMapTile = k;
+                    break;
+                }
+            }
+
+            if (iMapTile != -1) return MapTilesByID[iMapTile];
+            else return null;
+        }
+        
+        public MapCountry GetCountryByName(string name)
+        {
+            int iMapCountry = -1;
+            for (int k = 0; k < MapCountriesByID.Length; k++)
+            {
+                if (MapCountriesByID[k].name == name)
+                {
+                    iMapCountry = k;
+                    break;
+                }
+            }
+
+            if (iMapCountry != -1) return MapCountriesByID[iMapCountry];
+            else return null;
+        }
+        
     }
 }
