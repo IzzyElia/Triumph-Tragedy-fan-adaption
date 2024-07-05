@@ -5,6 +5,7 @@ using GameSharedInterfaces;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using HighlightState = GameSharedInterfaces.HighlightState;
 
 namespace GameBoard.UI
 {
@@ -49,7 +50,7 @@ namespace GameBoard.UI
         private int _cardID;
         public CardType CardType;
         public ICard Card;
-        public CardHighlightState HighlightState;
+        public HighlightState HighlightState;
         public bool InPlayArea => CardHand.CardsInPlayArea.Contains(this);
 
         public int cardID
@@ -63,25 +64,25 @@ namespace GameBoard.UI
         {
             if (cardplayInfo.TargetType == CardEffectTargetSelectionType.None)
             {
-                if (CardHand.HeldCard == this || CardHand.HoveredCard == this) HighlightState = CardHighlightState.Highlight;
-                else HighlightState = CardHighlightState.Neutral;
+                if (CardHand.HeldCard == this || CardHand.HoveredCard == this) HighlightState = HighlightState.Highlight;
+                else HighlightState = HighlightState.Neutral;
             }
             else if (!CardHand.CardsInPlayArea.Contains(this))
             {
-                HighlightState = CardHighlightState.Darken;
+                HighlightState = HighlightState.Darken;
             }
             
             switch (HighlightState)
             {
-                case CardHighlightState.Neutral:
+                case HighlightState.Neutral:
                     outlineImage.color = outlineBaseColor;
                     overlayImage.color = overlayBaseColor;
                     break;
-                case CardHighlightState.Darken:
+                case HighlightState.Darken:
                     outlineImage.color = outlineBaseColor;
                     overlayImage.color = new Color(overlayBaseColor.r, overlayBaseColor.g, overlayBaseColor.b, 0.5f);
                     break;
-                case CardHighlightState.Highlight:
+                case HighlightState.Highlight:
                     outlineImage.color = outlineImageHighlightColor;
                     overlayImage.color = overlayBaseColor;
                     break;

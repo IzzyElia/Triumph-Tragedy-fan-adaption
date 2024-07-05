@@ -92,7 +92,7 @@ namespace GameBoard.UI
         }
 
 
-        private void Awake()
+        protected virtual void Awake()
         {
             if (rectTransform is null) Debug.LogError($"No rect transform on {this.globalName}");
             _basePosition = rectTransform.anchoredPosition;

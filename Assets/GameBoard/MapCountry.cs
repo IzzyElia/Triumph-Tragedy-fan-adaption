@@ -169,8 +169,8 @@ namespace GameBoard
             ghostMaterial.SetColor("_SecondaryColor", unitSecondaryColor);
             material.SetTexture("_Flag", Flag);
             ghostMaterial.SetTexture("_Flag", Flag);
-            material.SetTexture("_MainTex", unitType.Icon);
-            ghostMaterial.SetTexture("_MainTex", unitType.Icon);
+            material.SetTexture("_MainTex", unitType.GetIcon(this.name));
+            ghostMaterial.SetTexture("_MainTex", unitType.GetIcon(this.name));
             return (material, ghostMaterial);
         }
 

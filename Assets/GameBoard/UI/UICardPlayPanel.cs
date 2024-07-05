@@ -19,8 +19,9 @@ namespace GameBoard.UI
         [NonSerialized] public CardPlayOption CardPlayOption;
         [NonSerialized] public RectTransform RectTransform;
 
-        private void Start()
+        public override void Start()
         {
+            base.Start();
             RectTransform = GetComponent<RectTransform>();
         }
 

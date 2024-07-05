@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using GameBoard;
+using GameBoard.UI.AnimatedEvents;
 using GameLogic;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using Unity.Collections;
 using UnityEngine;
 
@@ -15,13 +17,13 @@ namespace Game_Logic.TriumphAndTragedy
     /// <summary>
     /// Create with CreateCadre()
     /// </summary>
-    public class GameCadre : GameEntity
+    public class GameCadre : GameEntity, IGameCadre
     {
         // Update headers
         private const byte MoveHeader = 0;
         
         public const int UnitHidden = -2;
-        public static GameCadre CreateCadre(GameState gameState, int iUnitType, int iCountry, int iTile)
+        public static GameCadre CreateCadre(GameState gameState, int iUnitType, int iCountry, int iTile, int pips = 1)
         {
             if (!gameState.IsServer) throw new ServerOnlyException();
             
@@ -35,6 +37,7 @@ namespace Game_Logic.TriumphAndTragedy
             cadre.iUnitType = iUnitType;
             cadre.iCountry = iCountry;
             cadre.Tile = gameState.GetOrCreateEntity<GameTile>(iTile);
+            cadre.Pips = pips;
             ((TTGameState)gameState).CadresByTileID.Add(iTile, cadre);
             cadre.Active = true;
             cadre.RecalculateDerivedValues();
@@ -49,7 +52,7 @@ namespace Game_Logic.TriumphAndTragedy
             RecalculateDerivedValuesAndPushFullState();
         }
 
-        protected override void OnDeactivated()
+        protected override void OnDeactivatedClientside()
         {
             MapCadre.DestroyMapObject();
         }
@@ -68,7 +71,7 @@ namespace Game_Logic.TriumphAndTragedy
         public UnitType UnitType => iUnitType == UnitHidden ? null : GameState.Ruleset.unitTypes[iUnitType];
         public bool UnitTypeIsHidden => iUnitType == UnitHidden;
         
-        public int iCountry;
+        public int iCountry { get; private set; }
         public GameCountry Country
         {
             get => ((TTGameState)GameState).GetOrCreateEntity<GameCountry>(iCountry);
@@ -94,12 +97,13 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 if (iTile != -1) ((TTGameState)GameState).CadresByTileID.Remove(iTile, this);
                 ((TTGameState)GameState).CadresByTileID.Add(value.ID, this);
-                iTile = value.ID;
+                _iTile = value.ID;
             }
         }
-        public byte Pips;
-        public byte MaxPips;
+        public int Pips { get; set; }
+        public int MaxPips { get; set; }
         public GameFaction Faction => Country.Faction;
+        public IGameFaction IFaction => (IGameFaction)Faction;
 
         protected override void Init()
         {
@@ -108,7 +112,15 @@ namespace Game_Logic.TriumphAndTragedy
 
         public bool IsRevealedTo(int iPlayer)
         {
-            return Faction == null ? true : iPlayer == Faction.ID; // TODO also reveal if in combat
+            TTGameState ttGameState = (TTGameState)GameState;
+            if (ttGameState.GamePhase == GamePhase.SelectNextCombat || ttGameState.GamePhase == GamePhase.Combat)
+            {
+                foreach (var combat in ttGameState.CommittedCombats)
+                {
+                    if (combat.iTile == Tile.ID) return true;
+                }
+            }
+            return Faction == null ? true : iPlayer == Faction.ID;
         }
 
         
@@ -139,8 +151,9 @@ namespace Game_Logic.TriumphAndTragedy
                         path[i] = (int)incomingMessage.ReadUShort();
                     }
 
-                    Tile = GameState.GetEntity<GameTile>(path[^1]);
-                    MapCadre.AnimateMovement(path);
+                    iTile = path[^1];
+                    // ReSharper disable once ObjectCreationAsStatement
+                    new UnitMoveAnimation(GameState.UIController, path[^1], this.ID);
                     break;
             }
         }
@@ -148,14 +161,14 @@ namespace Game_Logic.TriumphAndTragedy
         protected override void ReceiveFullState(ref DataStreamReader incomingMessage)
         {
             iUnitType = incomingMessage.ReadInt();
-            Pips = incomingMessage.ReadByte();
-            MaxPips = incomingMessage.ReadByte();
+            Pips = incomingMessage.ReadShort();
+            MaxPips = incomingMessage.ReadShort();
             iCountry = incomingMessage.ReadInt();
             iTile = incomingMessage.ReadInt();
             
             MapTile tile = MapRenderer.MapTilesByID[iTile];
             MapCountry country = MapRenderer.MapCountriesByID[iCountry];
-            UnitType unitType = iUnitType != byte.MaxValue ? GameState.Ruleset.unitTypes[iUnitType] : UnitType.Unknown;
+            UnitType mapCadreUnitType = this.UnitType == null ? UnitType.Unknown : this.UnitType;
             if (MapCadre is null)
             {
                 try
@@ -164,7 +177,7 @@ namespace Game_Logic.TriumphAndTragedy
                         map:MapRenderer, 
                         tile:tile, 
                         country:country,
-                        unitType:unitType,
+                        unitType:mapCadreUnitType,
                         id: ID);
                 }
                 catch (Exception e)
@@ -177,7 +190,7 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 MapCadre.MapCountry = country;
                 MapCadre.Tile = tile;
-                MapCadre.UnitType = unitType;
+                MapCadre.UnitType = mapCadreUnitType;
                 MapCadre.MaxPips = MaxPips;
                 MapCadre.Pips = Pips;
             }
@@ -190,16 +203,16 @@ namespace Game_Logic.TriumphAndTragedy
             if (IsRevealedTo(targetPlayer))
             {
                 outgoingMessage.WriteInt(iUnitType);
-                outgoingMessage.WriteByte(Pips);
-                outgoingMessage.WriteByte(MaxPips);
+                outgoingMessage.WriteShort((short)Pips);
+                outgoingMessage.WriteShort((short)MaxPips);
                 outgoingMessage.WriteInt(iCountry);
                 outgoingMessage.WriteInt(iTile);
             }
             else
             {
-                outgoingMessage.WriteInt(byte.MaxValue); // Unknown unit type
-                outgoingMessage.WriteByte(0);
-                outgoingMessage.WriteByte(0);
+                outgoingMessage.WriteInt(UnitHidden); // Unknown unit type
+                outgoingMessage.WriteShort(0);
+                outgoingMessage.WriteShort(0);
                 outgoingMessage.WriteInt(iCountry);
                 outgoingMessage.WriteInt(iTile);
             }
@@ -220,6 +233,18 @@ namespace Game_Logic.TriumphAndTragedy
             }
 
             return hash;
+        }
+
+        public void TakeHit(byte hits = 1)
+        {
+            if (hits >= Pips)
+            {
+                //Kill(); // Units are killed at end of combat
+            }
+            else
+            {
+                Pips -= hits;
+            }
         }
     }
 }

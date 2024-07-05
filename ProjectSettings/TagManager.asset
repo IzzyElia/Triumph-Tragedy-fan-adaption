@@ -8,6 +8,8 @@ TagManager:
   - UICardRegion
   - UICardPlayPanel
   - UICardEffect
+  - UICombatPanelDice
+  - UICombatPanelDiceOption
   layers:
   - Default
   - TransparentFX
@@ -15,7 +17,7 @@ TagManager:
   - 
   - Water
   - UI
-  - Cadres
+  - Map Objects
   - Tiles
   - 
   - 

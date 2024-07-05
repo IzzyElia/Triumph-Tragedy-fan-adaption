@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Triumph_And_Tragedy
   m_EditorClassIdentifier: 
   unitPlacementRule: 1
+  CombatDamageRule: 1
   maxCadrePips: 4
   TechMatchesRequiredForTechUpgrade: 2
   techs:
@@ -31,102 +32,134 @@ MonoBehaviour:
     AirAttack: 2
     SubAttack: 2
     Movement: 0
+    SupportRange: 0
+    RedeploymentMovement: 0
     Category: 1
     RebaseRule: 1
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 1
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: AirForce
     GroundAttack: 1
     SeaAttack: 1
     AirAttack: 3
     SubAttack: 1
     Movement: 2
+    SupportRange: 2
+    RedeploymentMovement: 4
     Category: 3
     RebaseRule: 3
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Carrier
     GroundAttack: 1
     SeaAttack: 2
     AirAttack: 2
     SubAttack: 2
     Movement: 3
+    SupportRange: 2
+    RedeploymentMovement: 0
     Category: 2
     RebaseRule: 2
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 1
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Submarine
     GroundAttack: 0
     SeaAttack: 1
     AirAttack: 0
     SubAttack: 1
     Movement: 2
+    SupportRange: 0
+    RedeploymentMovement: 0
     Category: 4
     RebaseRule: 3
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Fleet
     GroundAttack: 1
     SeaAttack: 3
     AirAttack: 1
     SubAttack: 2
     Movement: 3
+    SupportRange: 0
+    RedeploymentMovement: 0
     Category: 2
     RebaseRule: 3
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Tank
     GroundAttack: 2
     SeaAttack: 0
     AirAttack: 0
     SubAttack: 0
     Movement: 2
+    SupportRange: 5
+    RedeploymentMovement: 0
     Category: 1
     RebaseRule: 3
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Infantry
     GroundAttack: 3
     SeaAttack: 1
     AirAttack: 1
     SubAttack: 0
     Movement: 2
+    SupportRange: 0
+    RedeploymentMovement: 0
     Category: 1
     RebaseRule: 3
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
+    TechModifiers: []
   - Name: Convoy
     GroundAttack: 0
     SeaAttack: 0
     AirAttack: 0
     SubAttack: 0
     Movement: 2
+    SupportRange: 0
+    RedeploymentMovement: 0
     Category: 2
     RebaseRule: 1
     FireAndRetreatRule: 0
+    HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 0
     IsTransportType: 1
+    TechModifiers: []
   specialDiplomacyActionDefinitions: []

@@ -16,17 +16,13 @@ namespace GameBoard.UI
         MainArea,
     }
     
-    public enum CardHighlightState
-    {
-        Neutral,
-        Highlight,
-        Darken
-    }
+
     //[ExecuteAlways]
     public class UICardHand : UIWindow
     {
-        private void Start()
+        public override void Start()
         {
+            base.Start();
             CardPreviewPrefab = Resources.Load<GameObject>("Prefabs/CardPreview");
             ActionCardPrefab = Resources.Load<GameObject>("Prefabs/ActionCard");
             ActionCardCountryEffectPrefab = Resources.Load<GameObject>("Prefabs/CardEffects/CountryCardEffect");

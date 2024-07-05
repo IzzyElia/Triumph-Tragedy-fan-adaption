@@ -12,6 +12,11 @@ namespace GameBoard.UI
         public abstract void OnResyncEnded();
         public abstract void UIUpdate();
         public virtual void OnRegistered(){}
+
+        public virtual void Start()
+        {
+        }
+
         protected Map MapRenderer => UIController.MapRenderer;
         protected ITTGameState GameState => UIController.GameState;
         protected MapFaction PlayerFaction => UIController.PlayerMapFaction;
@@ -49,6 +54,9 @@ namespace GameBoard.UI
         {
             Debug.Log($"Destroying {GetType().Name}");
             if (UIController is null) Debug.LogError($"{GetType().Name} was not ever registered to a UI Controller");
+            
+            OnBeingDestroyed();
+            
             foreach (var uiComponent in GetComponentsInChildren<UIComponent>())
             {
                 if (uiComponent != this) uiComponent.DestroyUIComponent();
@@ -57,6 +65,8 @@ namespace GameBoard.UI
             _supressDestroyWarning = true;
             Destroy(this.gameObject);
         }
+
+        protected virtual void OnBeingDestroyed() {}
         private void OnDestroy()
         {
             if (!_supressDestroyWarning && !SharedData.SupressDestroyWarningGlobally) Debug.LogError($"{GetType().Name} destroyed illegally. UI Component's should only ever be destroyed by calling UIComponent.DestroyUIComponent() ");

@@ -4,6 +4,7 @@ using System.IO;
 using GameSharedInterfaces;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Object = UnityEngine.Object;
 
 namespace GameSharedInterfaces.Triumph_and_Tragedy
 {
@@ -28,11 +29,22 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         [Rule(name:"All Controlled Territory", description:"Units can be built anywhere your faction occupies")]
         AllControlledTerritory, // Units can be built anywhere your faction occupies
     }
+
+    public enum CombatDamageRule
+    {
+        [Rule(name:"Prefer higher initiative (even spread)", description:"Higher initiative units are damaged before lower initiative units, but no cadre will be damaged more than the weakest cadre of its category (land/air/sea/sub)")]
+        PreferHigherInitiativeEvenSpread, // Units can be built anywhere your faction occupies
+        [Rule(name:"Random (even spread)", description:"Units are assigned damage at random, but no cadre will be damaged more than the weakest cadre of its category (land/air/sea/sub)")]
+        RandomEvenSpread, // Units can be built anywhere your faction occupies
+        [Rule(name:"Random", description:"Units are damaged completely at random")]
+        FullRandom, // Units can be built anywhere your faction occupies
+    }
     [CreateAssetMenu(fileName = "Ruleset", menuName = "Game/Ruleset", order = 1)]
     public class Ruleset : ScriptableObject
     {
         // Global rules
         public UnitPlacementRule unitPlacementRule = UnitPlacementRule.DiploAnnexedCountriesAllowed;
+        public CombatDamageRule CombatDamageRule = CombatDamageRule.RandomEvenSpread;
         
         public int maxCadrePips = 4;
         public int TechMatchesRequiredForTechUpgrade = 2;
@@ -65,7 +77,7 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         }
         
         // Unit Types
-        public int SeaTransportUnitType => GetIDOfNamedUnitType("Convoy");
+        public int iSeaTransportUnitType => GetIDOfNamedUnitType("Convoy");
         public UnitType[] unitTypes = new UnitType[0];
         public int GetIDOfNamedUnitType(string name)
         {
@@ -116,7 +128,7 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
             for (int i = 0; i < ruleset.unitTypes.Length; i++)
             {
                 ruleset.unitTypes[i].IdAndInitiative = i;
-                ruleset.unitTypes[i].SetGraphics();
+                ruleset.unitTypes[i].LoadUnitGraphics();
             }
             if (ruleset is null) Debug.LogError($"Could not find ruleset {path}");
             return ruleset;

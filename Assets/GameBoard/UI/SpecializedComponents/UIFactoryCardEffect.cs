@@ -3,6 +3,7 @@ using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using TMPro;
 using UnityEngine;
+using HighlightState = GameSharedInterfaces.HighlightState;
 
 namespace GameBoard.UI.SpecializeComponents
 {
@@ -19,8 +20,8 @@ namespace GameBoard.UI.SpecializeComponents
         
         public override void OnActivated()
         {
-            if (HighlightState == CardHighlightState.Darken) return;
-            if (HighlightState == CardHighlightState.Highlight)
+            if (HighlightState == HighlightState.Darken) return;
+            if (HighlightState == HighlightState.Highlight)
             {
                 Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.None, CardPlayType.None, -1);
             }
@@ -30,27 +31,27 @@ namespace GameBoard.UI.SpecializeComponents
             }
         }
 
-        protected override CardHighlightState ShouldHighlight(CardplayInfo cardplayInfo)
+        protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)
         {
             if (Card.CardHand.CardsInPlayArea.Contains(Card))
             {
-                if (GameState.GamePhase != GamePhase.Diplomacy) return CardHighlightState.Darken;
+                if (GameState.GamePhase != GamePhase.Diplomacy) return HighlightState.Darken;
                 if (cardplayInfo.CardPlayType == CardPlayType.Industry)
                 {
-                    return CardHighlightState.Highlight;
+                    return HighlightState.Highlight;
                 }
                 else if (cardplayInfo.TargetType == CardEffectTargetSelectionType.None)
                 {
-                    return CardHighlightState.Neutral;
+                    return HighlightState.Neutral;
                 }
                 else
                 {
-                    return CardHighlightState.Darken;
+                    return HighlightState.Darken;
                 }
             }
             else
             {
-                return CardHighlightState.Neutral;
+                return HighlightState.Neutral;
             }
         }
     }

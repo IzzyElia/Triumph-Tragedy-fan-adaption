@@ -52,7 +52,8 @@ namespace Game_Logic.TriumphAndTragedy
                 iLeaderCountry = value.ID;
             }
         }
-        
+
+        public DiplomaticStatus[] DiplomaticStatuses;
         public bool HasTech(int iTech) => iTechs.Contains(iTech);
 
         public HashSet<int> iTechs = new ();
@@ -120,9 +121,9 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
 
-        protected override void OnDeactivated()
+        protected override void OnDeactivatedClientside()
         {
-            throw new NotImplementedException("Did you mean to deactivate a faction?");
+            throw new NotSupportedException("Did you mean to deactivate a game faction?");
         }
 
         protected override void ReceiveCustomUpdate(ref DataStreamReader incomingMessage, byte header)

@@ -3,6 +3,7 @@ using GameSharedInterfaces;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using HighlightState = GameSharedInterfaces.HighlightState;
 
 namespace GameBoard.UI
 {
@@ -15,7 +16,7 @@ namespace GameBoard.UI
         [NonSerialized] private Color baseColor;
         [NonSerialized] private Color outlineBaseColor;
         [NonSerialized] public UICard Card;
-        protected CardHighlightState HighlightState;
+        protected HighlightState HighlightState;
 
         private void Awake()
         {
@@ -28,19 +29,19 @@ namespace GameBoard.UI
 
         public abstract void OnActivated();
         
-        protected abstract CardHighlightState ShouldHighlight(CardplayInfo cardplayInfo);
+        protected abstract HighlightState ShouldHighlight(CardplayInfo cardplayInfo);
         public void OnCardPlayOrSelectionStatusChanged(CardplayInfo cardplayInfo)
         {
             HighlightState = ShouldHighlight(cardplayInfo);
             switch (HighlightState)
             {
-                case CardHighlightState.Neutral:
+                case HighlightState.Neutral:
                     outlineImage.color = outlineBaseColor;
                     break;
-                case CardHighlightState.Darken:
+                case HighlightState.Darken:
                     outlineImage.color = outlineBaseColor;
                     break;
-                case CardHighlightState.Highlight:
+                case HighlightState.Highlight:
                     outlineImage.color = outlineImageHighlightColor;
                     break;
             }
@@ -60,7 +61,7 @@ namespace GameBoard.UI
         public override void UIUpdate()
         {
             
-            if (Card.CardHand.CardsInPlayArea.Contains(Card) && ((Card.CardHand.SelectingCardEffect && UIController.UICardEffectUnderPointer == this.gameObject) || HighlightState == CardHighlightState.Darken))
+            if (Card.CardHand.CardsInPlayArea.Contains(Card) && ((Card.CardHand.SelectingCardEffect && UIController.UICardEffectUnderPointer == this.gameObject) || HighlightState == HighlightState.Darken))
             {
                 backgroundImage.color = baseColor * 0.6f;
 

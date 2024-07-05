@@ -13,6 +13,12 @@ using Random = UnityEngine.Random;
 
 namespace GameBoard
 {
+    public enum DarkenState
+    {
+        None,
+        Combat,
+        SupportHighlight
+    }
     public enum TerrainType
     {
         Land,
@@ -26,7 +32,7 @@ namespace GameBoard
     {
         NotHighlighted,
         HoverHighlighted,
-        MovementOptionHighlighted,
+        NonHoverHighlighted,
     }
     [ExecuteAlways]
     public class MapTile : MapObject
@@ -67,25 +73,22 @@ namespace GameBoard
         private static Material seaMaterial;
         private static Material landMaterial;
         private static Material straitMaterial;
+        private static Texture2D CombatDarkenTexture;
+        [NonSerialized] public DarkenState CombatMarkerDarkenState;
         private static readonly int OccupierColor = Shader.PropertyToID("_OccupierColor");
 
 
         [NonSerialized] public MapCountry Occupier;
         [NonSerialized] public TileHighlightState HighlightState;
 
-#if !UNITY_EDITOR
-        static MapTile()
-        {
-            seaMaterial = Resources.Load<Material>("Shaders/Sea");
-            landMaterial = Resources.Load<Material>("Shaders/Land");
-            straitMaterial = Resources.Load<Material>("Shaders/Strait");
-        }
-#endif
-
         
         private void Start()
         {
             SetupMaterialForEditor();
+            CombatDarkenTexture = Resources.Load<Texture2D>("Icons/Misc/Combat_Guns");
+            seaMaterial = Resources.Load<Material>("Shaders/Sea");
+            landMaterial = Resources.Load<Material>("Shaders/Land");
+            straitMaterial = Resources.Load<Material>("Shaders/Strait");
         }
 
         public bool IsPointInside(Vector2 point)
@@ -176,19 +179,36 @@ namespace GameBoard
 
         public void RecalculateHighlighting()
         {
-            if (Map.UIController.HoveredOverTile == this)
+            if (Map.UIController.HoveredOverTile == this && (Map.HoveredMapObject is null || !Map.HoveredMapObject.BlocksTileHovering))
             {
                 HighlightState = TileHighlightState.HoverHighlighted;
             }
-            else if (Map.UIController.MovementHighlights.Contains(this.ID))
+            else if (Map.UIController.MovementHighlights.Contains(this.ID) || CombatMarkerDarkenState == DarkenState.SupportHighlight)
             {
-                HighlightState = TileHighlightState.MovementOptionHighlighted;
+                HighlightState = TileHighlightState.NonHoverHighlighted;
             }
             else HighlightState = TileHighlightState.NotHighlighted;
 
             foreach (var borderReference in connectedBorders)
             {
                 borderReference.border.RecalculateMaterialRuntimeValues();
+            }
+            
+            // Darkening
+            switch (CombatMarkerDarkenState)
+            {
+                case DarkenState.None:
+                    meshRenderer.material.SetInt("_Darken", 0);
+                    break;
+                case DarkenState.Combat:
+                    meshRenderer.material.SetInt("_Darken", 1);
+                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
+                    break; 
+                case DarkenState.SupportHighlight:
+                    meshRenderer.material.SetInt("_Darken", 1);
+                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
+                    break;
+                default:throw new NotImplementedException();
             }
         }
         private void SetupMaterialForEditor()

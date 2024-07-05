@@ -25,8 +25,8 @@ namespace GameBoard.UI.SpecializeComponents
 
         public override void OnActivated()
         {
-            if (HighlightState == CardHighlightState.Darken) return;
-            if (HighlightState == CardHighlightState.Highlight)
+            if (HighlightState == HighlightState.Darken) return;
+            if (HighlightState == HighlightState.Highlight)
             {
                 Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.None, CardPlayType.None, 0);
             }
@@ -37,7 +37,7 @@ namespace GameBoard.UI.SpecializeComponents
             }
         }
 
-        protected override CardHighlightState ShouldHighlight(CardplayInfo cardplayInfo)
+        protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)
         {
             throw new NotImplementedException();
         }

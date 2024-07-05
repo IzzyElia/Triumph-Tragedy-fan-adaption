@@ -74,7 +74,7 @@ namespace GameBoard.UI.SpecializeComponents
                     button.onClick.AddListener(unitButton.OnClick);
                     unitButton.Image = button.GetComponent<Image>();
                     unitButton.Image.material = new Material(UIController.uiIconMaterial);
-                    unitButton.Image.sprite = unitType.Sprite;
+                    unitButton.Image.sprite = unitType.GetSprite(PlayerCountry.name);
                     unitButton.Image.transform.SetParent(_unitLayout.transform);
                 }
             }
@@ -169,7 +169,7 @@ namespace GameBoard.UI.SpecializeComponents
         {
             if (_heldPlacementGhost is not null)
             {
-                _heldPlacementGhost.transform.position = new Vector3(UIController.PointerPositionInWorld.x, UIController.PointerPositionInWorld.y, -0.2f);
+                _heldPlacementGhost.SetPositionUnanimated(new Vector3(UIController.PointerPositionInWorld.x, UIController.PointerPositionInWorld.y, -0.2f));
             }
             if (UIController.PointerInputStatus == InputStatus.Pressed && !UIController.PointerIsOverUI)
             {

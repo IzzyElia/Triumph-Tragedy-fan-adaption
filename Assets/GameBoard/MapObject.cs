@@ -13,6 +13,7 @@ namespace GameBoard
         public int ID = -1;
         public bool IsDestroyed { get; private set; } = false;
         [SerializeField] private Map _map;
+        public bool BlocksTileHovering;
         public Map Map
         {
             get

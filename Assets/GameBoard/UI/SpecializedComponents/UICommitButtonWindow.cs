@@ -9,8 +9,9 @@ namespace GameBoard.UI.SpecializeComponents
     public class UICommitButtonWindow : UIWindow
     {
         [SerializeField] private Button _button;
-        private void Start()
+        public override void Start()
         {
+            base.Start();
             _button.onClick.AddListener(OnClick);
             _button.interactable = true;
         }
@@ -37,8 +38,76 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 CommitCommands();
             }
+            else if (GameState.GamePhase == GamePhase.CommitCombats)
+            {
+                CommitCombatCommittal();
+            }
+            else if (GameState.GamePhase == GamePhase.SelectSupport)
+            {
+                CommitCombatSupportSelection();
+            }
+            else if (GameState.GamePhase == GamePhase.SelectNextCombat)
+            {
+                throw new NotSupportedException("Next combat selection handled by the combat selection window");
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
+        void CommitCombatSupportSelection()
+        {
+            UIController.CombatSupportSelectionAction.Reset();
+            foreach ((int iCadre, CombatOption combat) in UIController.CombatSelectionWindow.SupportUnitSelections)
+            {
+                UIController.CombatSupportSelectionAction.AddParameter(iCadre, combat.iTile);
+            }
+            UIController.CombatSupportSelectionAction.Send(OnCombatSupportSelectionReply);
+            
+            _button.interactable = false;
+        }
+        
+        void OnCombatSupportSelectionReply(bool success)
+        {
+            if (success)
+            {
+                Debug.Log("WOOHOO!!!");
+            }
+            else
+            {
+                Debug.Log(":(");
+            }
+
+            _button.interactable = true;
+        }
+        
+        void CommitCombatCommittal()
+        {
+            UIController.CombatCommittalAction.Reset();
+            foreach (var combat in UIController.CombatSelectionWindow.SelectedCombats)
+            {
+                UIController.CombatCommittalAction.AddParameter(combat);
+            }
+            UIController.CombatCommittalAction.Send(OnCombatCommittalReply);
+            
+            _button.interactable = false;
+        }
+
+        void OnCombatCommittalReply(bool success)
+        {
+            if (success)
+            {
+                Debug.Log("WOOHOO!!!");
+            }
+            else
+            {
+                Debug.Log(":(");
+            }
+
+            _button.interactable = true;
+        }
+        
         void CommitCommands()
         {
             UIController.MovementAction.Send(OnCommandsReply);

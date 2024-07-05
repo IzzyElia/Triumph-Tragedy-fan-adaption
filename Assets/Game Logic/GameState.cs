@@ -387,6 +387,11 @@ namespace GameLogic
             return t;
         }
 
+        public int EntitySlotsForType<T>() where T : GameEntity
+        {
+            return _entitiesMap[typeof(T)].Length;
+        }
+
         public List<GameEntity> GetAllEntities()
         {
             List<GameEntity> allEntities = new List<GameEntity>();

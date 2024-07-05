@@ -18,8 +18,16 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         public IGameFaction GetFaction(int iFaction);
         
         // Pathfinding
-        public int[] CalculateAccessibleTilesAdjecentTo(int iCadre, int iTile, bool redeployment);
-        public int[] CalculateAccessibleTiles(int iCadre, bool redeployment);
+        public int[] CalculateAccessibleTilesAdjecentTo(int iCadre, int iTile, MoveType moveType);
+        public int[] CalculateAccessibleTiles(int iCadre, MoveType moveType);
+        
+        // Combat
+        public CombatOption[] GetCombatOptions();
+        public IGameCombat GetActiveCombat();
+        public bool IsCombatHappening { get; }
+        public List<int> ForcedCombats { get; }
+        public List<CombatOption> CommittedCombats { get; }
+        public Dictionary<int, int> CombatSupports { get; } 
 
     }
 }

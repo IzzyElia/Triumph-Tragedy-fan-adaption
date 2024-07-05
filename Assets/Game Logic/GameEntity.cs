@@ -138,7 +138,7 @@ namespace GameLogic
             }
         }
 
-        protected virtual void OnDeactivated() {}
+        protected virtual void OnDeactivatedClientside() {}
         protected virtual void Init() {}
         public virtual void OnPlayerCountChanged(int value) {}
         
@@ -150,7 +150,7 @@ namespace GameLogic
             Active = incomingMessage.ReadByte() == 1;
             ReceiveFullState(ref incomingMessage);
             RecalculateDerivedValues();
-            if (wasActive && !Active) OnDeactivated();
+            if (wasActive && !Active) OnDeactivatedClientside();
         }
 
         public virtual void RecalculateDerivedValues() {}

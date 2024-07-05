@@ -26,7 +26,7 @@ namespace GameBoard
             cadre.transform.SetParent(map.transform);
             cadre.Tile = tile;
             cadre._unitType = unitType;
-            cadre.transform.position = cadre.ChoosePosition(tile);
+            cadre.SetPositionUnanimated(cadre.ChoosePosition(tile));
             cadre.RecalculateAppearance();
             return cadre;
         }

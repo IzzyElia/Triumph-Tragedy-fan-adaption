@@ -14,10 +14,10 @@ namespace GameBoard.UI.SpecializeComponents
 
         public override void UIUpdate()
         {
-            ghost.transform.position = new Vector3(
+            ghost.SetPositionUnanimated(new Vector3(
                 UIController.PointerPositionInWorld.x, 
                 UIController.PointerPositionInWorld.y,
-                z:-0.2f);
+                z:-0.2f));
         
             int iCurrentHoveredTile = UIController.HoveredOverTile.ID;
             int iPreviousValidHoveredTile = path[^1];

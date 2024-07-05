@@ -43,7 +43,7 @@ namespace GameBoard
             cadre._unitType = unitType;
             if (tile is not null)
             {
-                cadre.transform.position = cadre.ChoosePosition(tile);
+                cadre.SetPositionUnanimated(cadre.ChoosePosition(tile));
                 cadre.transform.SetParent(tile.transform);
             }
 

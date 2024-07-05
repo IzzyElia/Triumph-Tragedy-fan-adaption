@@ -58,7 +58,7 @@ namespace GameBoard.EditorUtilities
                 {
                     MapTile target = obj.GetComponent<MapTile>();
                     _mapCadre.Tile = target;
-                    _mapCadre.transform.position = _mapCadre.ChoosePosition(target);
+                    _mapCadre.SetPositionUnanimated(_mapCadre.ChoosePosition(target));
                     editorWindow.Close();
                 }
             }

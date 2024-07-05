@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using GameBoard;
+using GameBoard.UI.SpecializeComponents.CombatPanel;
 using GameLogic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
@@ -59,7 +60,9 @@ namespace Game_Logic.TriumphAndTragedy
     {
         // Fields and Properties
         const byte UpdatingGlobalFieldsHeader = 0;
+        private const byte UpdatingCombatStateHeader = 1;
 
+        // Synced fields
         public int Year { get; set; }
         public Season Season { get; set; }
         public GamePhase GamePhase { get; set; }
@@ -67,6 +70,11 @@ namespace Game_Logic.TriumphAndTragedy
         public int[] PlayerOrder { get; set; }
         public bool[] PlayerCommitted { get; set; } // for tracking which players committed to a simultaneous action, etc initial placement
         public bool[] PlayerPassed { get; set; } // for tracking which players have passed during cardplayµø
+        public GameCombat ActiveCombat = null;
+        public List<int> ForcedCombats { get; private set; } = new List<int>(); // integer is the tile id
+        public List<CombatOption> CommittedCombats { get; private set; } = new List<CombatOption>();
+        public Dictionary<int, int> CombatSupports { get; private set; } = new Dictionary<int, int>();
+
         public bool AllPlayersAreCommitted
         {
             get
@@ -90,13 +98,17 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
         public override int ActivePlayer => GamePhase == GamePhase.InitialPlacement || GamePhase == GamePhase.None ? -1 : PlayerOrder[PositionInTurnOrder];
-
+        
         public override bool IsWaitingOnPlayer(int iPlayer)
         {
             if (iPlayer >= PlayerCount) return false;
-            if (GamePhase == GamePhase.InitialPlacement)
+            if (GamePhase == GamePhase.InitialPlacement || GamePhase == GamePhase.SelectSupport)
             {
                 return !PlayerCommitted[iPlayer];
+            }
+            else if (GamePhase == GamePhase.Combat)
+            {
+                return ActiveCombat.iPhasingPlayer == iPlayer;
             }
             else
             {
@@ -123,6 +135,7 @@ namespace Game_Logic.TriumphAndTragedy
             message.WriteByte((byte)Season);
             message.WriteByte((byte)GamePhase);
             message.WriteByte((byte)PositionInTurnOrder);
+            // Assumes PlayerCount is constant after being synced
             for (int i = 0; i < PlayerCount; i++)
             {
                 message.WriteByte((byte)PlayerOrder[i]);
@@ -137,8 +150,54 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 message.WriteByte((byte)(PlayerPassed[i] == true ? 1 : 0));
             }
+
+            message.WriteUShort((ushort)ForcedCombats.Count);
+            for (int i = 0; i < ForcedCombats.Count; i++)
+            {
+                message.WriteUShort((ushort)ForcedCombats[i]);
+            }
+
+            message.WriteUShort((ushort)CommittedCombats.Count);
+            for (int i = 0; i < CommittedCombats.Count; i++)
+            {
+                CommittedCombats[i].Write(ref message);
+            }
+
+            message.WriteUShort((ushort)CombatSupports.Count);
+            foreach ((int iCadre, int iTile) in CombatSupports)
+            {
+                message.WriteUShort((ushort)iCadre);
+                message.WriteShort((short)iTile);
+            }
+            
+            
             PushGameStateUpdate(ref message, iPlayer);
             NetworkMember.NetworkingLog("Pushing TTGameState global update");
+        }
+
+        public void PushCombatState()
+        {
+            foreach (int iPlayer in Players)
+            {
+                PushCombatState(iPlayer);
+            }
+        }
+
+        public void PushCombatState(int iPlayer)
+        {
+            if (!IsPlayerSyncedOrBeingResynced(iPlayer)) return;
+            DataStreamWriter message = StartGameStateUpdate(iPlayer);
+            message.WriteByte(UpdatingCombatStateHeader);
+            message.WriteByte((byte)(IsCombatHappening ? 1 : 0));
+            if (IsCombatHappening)
+            {
+                foreach (var cadre in ActiveCombat.CalculateInvolvedCadreInterfaces())
+                {
+                    cadre.PushFullState();
+                }
+                ActiveCombat.WriteFullState(ref message);
+            }
+            PushGameStateUpdate(ref message, iPlayer);
         }
         
         public override void ReceiveGameStateUpdate(ref DataStreamReader message)
@@ -153,6 +212,7 @@ namespace Game_Logic.TriumphAndTragedy
                     Season = (Season)message.ReadByte();
                     GamePhase = (GamePhase)message.ReadByte();
                     PositionInTurnOrder = (int)message.ReadByte();
+                    
                     PlayerOrder = new int[PlayerCount];
                     for (int i = 0; i < PlayerCount; i++)
                     {
@@ -169,6 +229,44 @@ namespace Game_Logic.TriumphAndTragedy
                     for (int i = 0; i < PlayerCount; i++)
                     {
                         PlayerPassed[i] = message.ReadByte() != 0;
+                    }
+                    
+                    ForcedCombats.Clear();
+                    int forcedCombatsLength = message.ReadUShort();
+                    for (int i = 0; i < forcedCombatsLength; i++)
+                    {
+                        int forcedCombat = message.ReadUShort();
+                        ForcedCombats.Add(forcedCombat);
+                    }
+                    
+                    CommittedCombats.Clear();
+                    int committedCombatsLength = message.ReadUShort();
+                    for (int i = 0; i < committedCombatsLength; i++)
+                    {
+                        CombatOption committedCombat = CombatOption.Recreate(ref message);
+                        CommittedCombats.Add(committedCombat);
+                    }
+                    
+                    CombatSupports.Clear();
+                    int combatSupportsLength = message.ReadUShort();
+                    for (int i = 0; i < combatSupportsLength; i++)
+                    {
+                        int iCadre = message.ReadUShort();
+                        int iTile = message.ReadShort();
+                        CombatSupports.Add(iCadre, iTile);
+                    }
+                    break;
+                
+                case UpdatingCombatStateHeader:
+                    bool combatIsHappening = message.ReadByte() == 1;
+                    if (combatIsHappening)
+                    {
+                        if (ActiveCombat is null) ActiveCombat = new GameCombat();
+                        ActiveCombat.ReceiveFullState(this, ref message);
+                    }
+                    else
+                    {
+                        ActiveCombat = null;
                     }
                     break;
             }
@@ -285,7 +383,7 @@ namespace Game_Logic.TriumphAndTragedy
             PositionInTurnOrder = 0;
         }
 
-        void ResetPlayerStatuses(bool push)
+        public void ResetPlayerStatuses(bool push)
         {
             if (!IsServer) throw new InvalidOperationException();
             for (int i = 0; i < PlayerPassed.Length; i++)
@@ -305,6 +403,18 @@ namespace Game_Logic.TriumphAndTragedy
 
             GamePhase = GamePhase.GiveCommands;
             PositionInTurnOrder = 0;
+        }
+
+        public void AdvanceToCombatIfAllPlayersDoneWithSupport(bool push)
+        {
+            for (int i = 0; i < PlayerCommitted.Length; i++)
+            {
+                if (!PlayerCommitted[i]) return;
+            }
+            
+            // All players selected support
+            GamePhase = GamePhase.SelectNextCombat;
+            if (push) PushGlobalFields();
         }
         
         /// <summary>
@@ -359,7 +469,7 @@ namespace Game_Logic.TriumphAndTragedy
         
         public int[] RollDice(params int[] dice)
         {
-            Random.InitState(Time.time.GetHashCode());
+            Random.InitState(DateTime.UtcNow.Ticks.GetHashCode());
             int[] results = new int[dice.Length];
             string resultsString = "Rolled ";
             for (int i = 0; i < dice.Length; i++)
@@ -380,11 +490,48 @@ namespace Game_Logic.TriumphAndTragedy
 
         public Dictionary<UnorderedPair<int>, GameBorder> BorderOfTiles =
             new Dictionary<UnorderedPair<int>, GameBorder>();
-        public HashsetDictionary<int, GameCadre> CadresByTileID = new HashsetDictionary<int, GameCadre>();
+        public Izzy.HashsetDictionary<int, GameCadre> CadresByTileID = new Izzy.HashsetDictionary<int, GameCadre>();
         public Queue<int> FreedCadreIDs = new Queue<int>();
         public int NextCadreID = 0;
+        public Queue<int> FreedCombatIDs = new Queue<int>();
+        public int NextCombatID = 0;
         public int NumBorders;
 
+        private List<GameCombat> c_combats = new List<GameCombat>();
+        public CombatOption[] GetCombatOptions()
+        {
+            if (GamePhase == GamePhase.SelectNextCombat || GamePhase == GamePhase.SelectSupport)
+            {
+                return CommittedCombats.ToArray();
+            }
+            else if (GamePhase == GamePhase.CommitCombats)
+            {
+                List<CombatOption> combatOptions = new List<CombatOption>();
+                foreach (var tile in GetEntitiesOfType<GameTile>())
+                {
+                    bool[] factionHasUnits = new bool[EntitySlotsForType<GameFaction>()];
+                    foreach (var cadre in tile.GetCadresOnTile())
+                        factionHasUnits[cadre.Faction.ID] = true;
+                    if (!factionHasUnits[ActivePlayer]) continue;
+                    else
+                    {
+                        for (int iFaction = 0; iFaction < factionHasUnits.Length; iFaction++)
+                        {
+                            if (iFaction == ActivePlayer) continue;
+                            if (!factionHasUnits[iFaction]) continue;
+                            combatOptions.Add(new CombatOption(iTile:tile.ID, iAttacker:ActivePlayer, iDefender:iFaction, !ForcedCombats.Contains(tile.ID)));
+                        }
+                    }
+                }
+
+                return combatOptions.ToArray();
+            }
+            else
+            {
+                return Array.Empty<CombatOption>();
+            }
+        }
+        
         public ICard GetCard(int id, CardType cardType)
         {
             switch (cardType)
@@ -398,6 +545,13 @@ namespace Game_Logic.TriumphAndTragedy
         public IGameFaction GetFaction(int iFaction)
         {
             return GetEntity<GameFaction>(iFaction) as IGameFaction;
+        }
+
+        public bool IsCombatHappening => ActiveCombat != null;
+        public IGameCombat GetActiveCombat()
+        {
+            if (!IsCombatHappening) return null;
+            return (IGameCombat)ActiveCombat;
         }
 
         public (int iTile, int iCountry, int startingCadres)[] GetStartingUnits(int iPlayer)
@@ -694,6 +848,7 @@ namespace Game_Logic.TriumphAndTragedy
                     for (int i = 0; i < startingUnitInfo.startingCadres; i++)
                     {
                         int iUnitType = Random.Range(0, Ruleset.unitTypes.Length);
+                        if (Ruleset.unitTypes[iUnitType].IdAndInitiative == Ruleset.iSeaTransportUnitType) iUnitType--;
                         GameCadre cadre = GameCadre.CreateCadre(this, iUnitType, startingUnitInfo.iCountry,
                             startingUnitInfo.iTile);
                         cadre.RecalculateDerivedValuesAndPushFullState();

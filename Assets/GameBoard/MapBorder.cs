@@ -7,6 +7,7 @@ using UnityEditor;
 
 namespace GameBoard
 {
+
     [ExecuteAlways]
     public class MapBorder : MapObject
     {
@@ -95,14 +96,17 @@ namespace GameBoard
                     return isCountryBorder ? (tile.mapCountry is not null ? tile.mapCountry.CalculatedColor : Color.clear) : Color.clear;
                 case TileHighlightState.HoverHighlighted:
                     return _highlightColor;
-                case TileHighlightState.MovementOptionHighlighted:
+                case TileHighlightState.NonHoverHighlighted:
                     return _movementOptionHighlightColor;
                 default: throw new NotImplementedException();
             }
         }
+
         public void RecalculateMaterialRuntimeValues()
         {
             Random.InitState(name.GetHashCode());
+            
+            // Border highlights
             Color lColor = default;
             Color rColor = default;
             if (connectedMapTiles.Count == 2 && connectedMapTiles[0].mapCountry != connectedMapTiles[1].mapCountry)

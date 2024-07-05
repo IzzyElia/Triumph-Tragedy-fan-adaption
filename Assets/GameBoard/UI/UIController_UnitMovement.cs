@@ -4,6 +4,7 @@ using GameSharedInterfaces.Triumph_and_Tragedy;
 
 namespace GameBoard.UI
 {
+    // Unit movement manager
     public partial class UIController
     {
         public HashSet<int> MovementHighlights { get; private set; } = new HashSet<int>();
@@ -61,6 +62,7 @@ namespace GameBoard.UI
                         MovementActionData move = new MovementActionData(ghost.BaseCadre, HoveredOverTile.ID);
                         ghost.MovementAction = move;
                         MovementAction.AddParameter(move);
+
                         CommandsInfoWindow.Refresh();
                     }
                     
@@ -128,7 +130,7 @@ namespace GameBoard.UI
                         cadre.Darken = true;
                         cadre.RecalculateAppearance();
                     }
-                    movesets.Add(GameState.CalculateAccessibleTiles(cadre.ID, false));
+                    movesets.Add(GameState.CalculateAccessibleTiles(cadre.ID, MoveType.Normal));
                 }
             }
 

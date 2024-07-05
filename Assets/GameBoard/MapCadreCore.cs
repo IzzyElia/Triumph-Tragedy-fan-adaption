@@ -9,6 +9,7 @@ namespace GameBoard
 
     public abstract class MapCadreCore : MapObject, IMapToken
     {
+        private static GameObject _arrowPrefab = null;
         public const int CadreLayer = 6;
         
         [SerializeField] private MeshFilter meshFilter;
@@ -43,7 +44,7 @@ namespace GameBoard
             }
         }
 
-        public Vector3 TokenPosition => _animatingMovement ? Destination : transform.position;
+        public Vector3 TokenPosition => Destination;
 
         protected UnitType  _unitType;
         public UnitType UnitType
@@ -111,6 +112,12 @@ namespace GameBoard
                 }
             }
             return _points[Random.Range(0, _points.Count)];
+        }
+
+        public void SetPositionUnanimated(Vector3 position)
+        {
+            Destination = position;
+            transform.position = position;
         }
         public Vector3 ChoosePosition(MapTile tile, bool cascade = true)
         {
@@ -209,13 +216,14 @@ namespace GameBoard
             }
             
             bestPoint = new Vector3(bestPoint.x, bestPoint.y, -BaseZSize * 0.5f);
+            /*
             if (cascade && closestCadreToBestPoint is not null)
             {
                 Vector3 storedPosition = transform.position;
-                transform.position = bestPoint;
+                SetPositionUnanimated(bestPoint);
                 closestCadreToBestPoint.ChoosePosition(tile, false);
                 transform.position = storedPosition;
-            }
+            } */
             return bestPoint;
         }
         private float DistancePointToSegment(Vector3 point, Vector3 v, Vector3 w)
@@ -234,11 +242,11 @@ namespace GameBoard
             RecalculateAppearance();
         }
 
-        private bool _animatingMovement;
+        public bool AnimatingMovement;
         protected override void OnTileChanged(MapTile tile)
         {
             base.OnTileChanged(tile);
-            if (!_animatingMovement) transform.position = ChoosePosition(tile);
+            if (!AnimatingMovement) SetPositionUnanimated(ChoosePosition(tile));
         }
 
 
@@ -252,56 +260,82 @@ namespace GameBoard
         public SelectionStatus HoveredOver { get; set; }
         public bool Darken;
         protected bool UseGhostMaterial;
-
-        private Queue<int> movementQueue = new Queue<int>();
-        public void AnimateMovement(int[] path)
-        {
-            _animatingMovement = true;
-            int iTile = path[^1];
-            MapTile tile = Map.MapTilesByID[iTile];
-            Destination = ChoosePosition(tile, true);
-            Tile = tile;
-            SetAnimated(true);
-        }
         
-        private float _momentum = 0;
-        private const float MaxMomentum = 0.15f;
-        public override void Animate()
+        // Arrow
+        private GameObject _arrow;
+        private GameObject _arrowTarget;
+
+        public void RecalculateArrowTarget()
         {
-            bool StillNeedsAnimation = false;
-            
-            if (Vector3.Distance(transform.localPosition, Destination) <= 0.01f)
+            if (Map.GameState.GamePhase == GamePhase.SelectSupport)
             {
-                if (movementQueue.TryDequeue(out int iTile))
+                if (IsHoveredOver && Map.UIController.CombatMarkerSelectedForSupport is not null && Map.UIController.CombatMarkerSelectedForSupport.SupportOptions.Contains(this.ID))
                 {
-                    if (movementQueue.Count > 0) Destination = ChooseRandomPosition(Map.MapTilesByID[iTile]);
-                    else Destination = ChoosePosition(Map.MapTilesByID[iTile], true);
-                    StillNeedsAnimation = true;
-                    _momentum = 0;
+                    SetArrowTarget(Map.MapTilesByID[Map.UIController.CombatMarkerSelectedForSupport.CombatOption.iTile].gameObject);
+                }
+                else if (Map.UIController.SupportUnitSelections.TryGetValue(this.ID, out CombatOption combat))
+                {
+                    SetArrowTarget(Map.MapTilesByID[combat.iTile].gameObject);
+                }
+                else
+                {
+                    SetArrowTarget(null);
                 }
             }
-            else
+            else if (Map.GameState.GamePhase == GamePhase.SelectNextCombat)
             {
-                StillNeedsAnimation = true;
-            }
-            
-            _momentum = Mathf.Min(_momentum + 0.003f, MaxMomentum);
-            transform.position = Vector3.Lerp(transform.position, Destination, _momentum);
-            
-            if (!StillNeedsAnimation)
-            {
-                SetAnimated(false);
+                if (Map.GameState.CombatSupports.TryGetValue(this.ID, out int iTile))
+                {
+                    MapTile tile = Map.MapTilesByID[iTile];
+                    SetArrowTarget(tile.gameObject);
+                }
+                else
+                {
+                    SetArrowTarget(null);
+                }
             }
         }
-
-        public override void ConcludeAnimation()
+        private void SetArrowTarget(GameObject arrowTarget)
         {
-            transform.position = Destination;
-        }
+            if (_arrow is null && arrowTarget is not null)
+            {
+                if (_arrowPrefab is null) _arrowPrefab = Resources.Load<GameObject>("Prefabs/Arrow");
+                _arrow = Instantiate(_arrowPrefab);
+                _arrow.GetComponent<MeshRenderer>().material.SetColor("_BaseColor", Color.blue);
+                _arrow.transform.SetParent(Map.transform);
+            }
+            if (arrowTarget is not null)
+            {
+                Vector3 midpoint = (transform.position + arrowTarget.transform.position) / 2f;
+                _arrow.transform.position = new Vector3(midpoint.x, midpoint.y, -0.1f);
 
+                Vector3 direction = arrowTarget.transform.position - transform.position;
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                _arrow.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle - 90f));
+
+                float distance = Vector3.Distance(transform.position, arrowTarget.transform.position);
+                _arrow.transform.localScale = new Vector3(0.12f, distance/2f, 1);
+
+                if (arrowTarget != _arrowTarget)
+                {
+                    _arrow.GetComponent<MeshRenderer>().material.SetFloat("_AnimationStartTime", Time.timeSinceLevelLoad);
+                }
+            }
+            if (_arrow is not null && arrowTarget is null)
+            {
+                Destroy(_arrow);
+                _arrow = null;
+            }
+            _arrowTarget = arrowTarget;
+        }
+        // /Arrow/
+        
+        public bool IsHoveredOver;
         public override void OnHoveredStatusChanged(bool isHoveredOver)
         {
             base.OnHoveredStatusChanged(isHoveredOver);
+            this.IsHoveredOver = isHoveredOver;
+            RecalculateArrowTarget();
             RecalculateAppearance();
         }
 
@@ -312,6 +346,8 @@ namespace GameBoard
         }
 
         private bool _highlighted = false;
+        public Color highlightColor;
+        public Color supportHighlightColor;
         public virtual void RecalculateAppearance()
         {
             meshFilter.sharedMesh = Map.CadreBlockMesh;
@@ -327,7 +363,7 @@ namespace GameBoard
 
             if (Map.SelectedObjects.Contains(this) || Map.HoveredMapObject == this)
             {
-                meshRenderer.material.SetInt("_Highlighted", 1);
+                meshRenderer.material.SetColor("_HighlightColor", highlightColor);
                 if (Map.GameState.GamePhase == GamePhase.Production &&
                     Map.GameState.ActivePlayer == Map.GameState.iPlayer &&
                     Map.HoveredMapObject == this)
@@ -341,9 +377,13 @@ namespace GameBoard
                     meshRenderer.material.SetInt("_AddPipsOverlayIsHighlighted", 1);
                 }
             }
+            else if (Map.UIController.CombatMarkerSelectedForSupport is not null && Map.UIController.CombatMarkerSelectedForSupport.SupportOptions.Contains(this.ID))
+            {
+                meshRenderer.material.SetColor("_HighlightColor", supportHighlightColor);
+            }
             else
             {
-                meshRenderer.material.SetInt("_Highlighted", 0);
+                meshRenderer.material.SetColor("_HighlightColor", Color.clear);
                 meshRenderer.material.SetInt("_ShowAddPipsOverlay", 0);
             }
         }

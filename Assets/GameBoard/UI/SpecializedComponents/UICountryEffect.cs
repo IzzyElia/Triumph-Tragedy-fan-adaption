@@ -18,7 +18,7 @@ namespace GameBoard.UI.SpecializeComponents
 
         public override void OnActivated()
         {
-            if (HighlightState == CardHighlightState.Highlight)
+            if (HighlightState == GameSharedInterfaces.HighlightState.Highlight)
             {
                 Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.None, CardPlayType.None, -1);
             }
@@ -28,28 +28,28 @@ namespace GameBoard.UI.SpecializeComponents
             }
         }
 
-        protected override CardHighlightState ShouldHighlight(CardplayInfo cardplayInfo)
+        protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)
         {
             if (Card.CardHand.CardsInPlayArea.Contains(Card))
             {
-                if (GameState.GamePhase != GamePhase.Diplomacy) return CardHighlightState.Darken;
+                if (GameState.GamePhase != GamePhase.Diplomacy) return GameSharedInterfaces.HighlightState.Darken;
                 if (cardplayInfo.TargetType == CardEffectTargetSelectionType.Country &&
                     cardplayInfo.iTarget == iCountry)
                 {
-                    return CardHighlightState.Highlight;
+                    return GameSharedInterfaces.HighlightState.Highlight;
                 }
                 else if (cardplayInfo.TargetType == CardEffectTargetSelectionType.None)
                 {
-                    return CardHighlightState.Neutral;
+                    return GameSharedInterfaces.HighlightState.Neutral;
                 }
                 else
                 {
-                    return CardHighlightState.Darken;
+                    return GameSharedInterfaces.HighlightState.Darken;
                 }
             }
             else
             {
-                return CardHighlightState.Neutral;
+                return GameSharedInterfaces.HighlightState.Neutral;
             }
         }
     }

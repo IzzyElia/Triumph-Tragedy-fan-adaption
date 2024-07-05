@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GameBoard.MapMarkers;
 using GameBoard.UI.SpecializeComponents;
+using GameBoard.UI.SpecializeComponents.CombatPanel;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
@@ -47,9 +49,10 @@ namespace GameBoard.UI
             uiController.InitialPlacementAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("BuildInitialUnits");
             uiController.ProductionAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("ProductionAction");
             uiController.CardplayAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CardplayAction");
-            uiController.CombatAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CombatDecision");
-            uiController.CombatSelectionAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CombatSelection");
-
+            uiController.CombatAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CombatDecisionAction");
+            uiController.CombatCommittalAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("SelectCombatsAction");
+            uiController.CombatSelectionAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("SelectNextCombatAction");
+            uiController.CombatSupportSelectionAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("SelectCombatSupportAction");
             return uiController;
         }
         
@@ -66,6 +69,8 @@ namespace GameBoard.UI
         [NonSerialized] public UIPlayerStartTurnPanel PlayerStartTurnScreen;
         [NonSerialized] public DebugTextbox DebugTextbox;
         [NonSerialized] public UICardPlayArea CardPlayArea;
+        [NonSerialized] public CombatSelectionWindow CombatSelectionWindow;
+        [NonSerialized] public CombatPanel CombatPanel;
         [NonSerialized] public Map MapRenderer;
         public InputType inputType;
         public Camera mainCamera;
@@ -86,6 +91,10 @@ namespace GameBoard.UI
         public GameObject UICardRegionUnderPointer { get; private set; }
         public GameObject UICardPlayPanelUnderPointer { get; private set; }
         public GameObject UICardEffectUnderPointer { get; private set; }
+        public GameObject UIDiceOptionUnderPointer { get; private set; }
+        public GameObject UICombatDieUnderPointer { get; private set; }
+        public CombatMarker CombatMarkerSelectedForSupport { get; set; } = null;
+        public Dictionary<int, CombatOption> SupportUnitSelections { get; private set; } = new Dictionary<int, CombatOption>();
         public bool PointerIsOverUI { get; private set; }
         public Vector3 PointerPositionInWorld { get; private set; }
         public Vector3 PointerPositionOnScreen { get; private set; }
@@ -108,7 +117,6 @@ namespace GameBoard.UI
         public MapObject PrevHoveredMapObject;
         public bool HoveredMapObjectChanged { get; private set; }
         public MapTile HoveredOverTile { get; private set; }
-
         public MapTile PrevHoveredOverTile;
         public bool HoveredOverTileChanged { get; private set; }
         public IPlayerAction MovementAction { get; private set; }
@@ -116,7 +124,9 @@ namespace GameBoard.UI
         public IPlayerAction ProductionAction { get; private set; }
         public IPlayerAction CardplayAction { get; private set; }
         public IPlayerAction CombatAction { get; private set; }
+        public IPlayerAction CombatCommittalAction { get; private set; }
         public IPlayerAction CombatSelectionAction { get; private set; }
+        public IPlayerAction CombatSupportSelectionAction { get; private set; }
         // These values are compared against the game state's current values to see if a refresh is needed
         public GamePhase knownGamephase = GamePhase.None;
         public Season knownSeason = Season.None;
@@ -128,6 +138,7 @@ namespace GameBoard.UI
         public GameObject RootUIObject;
         public bool UnresolvedStateChange; // Should be triggered when the game state or the players queued action state changes
         public bool UnresolvedResync;
+        public bool GamestateChangedThisUpdate; // Mainly indended as a flag for other compartmentalized ui controller behaviors
         public bool ActiveLocally;
         public Canvas Canvas;
         public bool Initialized = false;
@@ -149,7 +160,10 @@ namespace GameBoard.UI
             
             // Create UI and register UI Components found in the prefab
             RootUIObject = Instantiate(playerUIPrefab, canvasObject.transform);
-            foreach (var uiComponent in RootUIObject.GetComponentsInChildren<UIComponent>())
+            UIWrapperController wrapperController = RootUIObject.GetComponent<UIWrapperController>();
+            if (wrapperController is null) throw new InvalidOperationException("Root player ui object should have a UIWrapperController attached");
+            wrapperController.UIController = this;
+            foreach (var uiComponent in RootUIObject.GetComponentsInChildren<UIComponent>(includeInactive:true))
             {
                 RegisterUIComponent(uiComponent);
                 if (uiComponent is UIWindow window)
@@ -165,7 +179,9 @@ namespace GameBoard.UI
             ProductionInfoWindow = GetUIComponent<UIProductionInfo>("Production Info Window");
             CommandsInfoWindow = GetUIComponent<UICommandsInfo>("Commands Info Window");
             PlayerStartTurnScreen = GetUIComponent<UIPlayerStartTurnPanel>("Start Turn Screen");
-
+            CombatSelectionWindow = GetUIComponent<CombatSelectionWindow>("Combat Selection Window");
+            CombatPanel = GetUIComponent<CombatPanel>("Combat Panel");
+            
             Initialized = true;
         }
 
@@ -220,9 +236,10 @@ namespace GameBoard.UI
             
             RecalculateUserInputValues();
 
-            // Resolve resync logic before gamestate logic, as it may be order dependant
+            // OnResyncEnded is called before OnGamestateChanged, as it may be order dependant
             // (ie OnResyncEnded usually reconstructs the skeleton of the object
             // while OnGamestateChanged applies values to that skeleton)
+            GamestateChangedThisUpdate = false;
             if (UnresolvedResync && RootUIObject.activeSelf)
             {
                 foreach (var uiComponent in new List<UIComponent>(_uiComponents))
@@ -231,6 +248,7 @@ namespace GameBoard.UI
                 }
 
                 UnresolvedResync = false;
+                GamestateChangedThisUpdate = true;
             }
             if (UnresolvedStateChange && GameState.IsSynced && RootUIObject.activeSelf)
             {
@@ -245,6 +263,7 @@ namespace GameBoard.UI
                 }
                 RecalculateUIMode();
                 UnresolvedStateChange = false;
+                GamestateChangedThisUpdate = true;
             }
 
             UpdateHoveringAndSelectionChanges();
@@ -256,6 +275,7 @@ namespace GameBoard.UI
             }
             
             MovementUpdate();
+            AnimationsUpdate();
         }
 
         void RecalculateUserInputValues()
@@ -313,12 +333,12 @@ namespace GameBoard.UI
         
         void UpdateHoveringAndSelectionChanges()
         {
-            GameObject cadreAtCursor;
+            GameObject nonTileObjectAtCursor;
             GameObject tileAtCursor;
             GameObject[] uiObjectsAtCursor;
             GameObject topWorldObjectAtCursor;
             GameObject topUIObjectAtCursor;
-            (uiObjectsAtCursor, cadreAtCursor, tileAtCursor) =
+            (uiObjectsAtCursor, nonTileObjectAtCursor, tileAtCursor) =
                 GetObjectUnderScreenPoint(PointerPositionOnScreen, mainCamera);
             
             // Set the PointerIsOverUI property
@@ -327,6 +347,8 @@ namespace GameBoard.UI
             UICardRegionUnderPointer = null;
             UICardPlayPanelUnderPointer = null;
             UICardEffectUnderPointer = null;
+            UIDiceOptionUnderPointer = null;
+            UICombatDieUnderPointer = null;
             HoveredMapObject = null;
             HoveredOverTile = null;
             SelectionChanged = false;
@@ -354,6 +376,15 @@ namespace GameBoard.UI
                     {
                         UICardEffectUnderPointer = uiObject;
                     }
+                    
+                    if (uiObject.CompareTag("UICombatPanelDiceOption") && UIDiceOptionUnderPointer is null)
+                    {
+                        UIDiceOptionUnderPointer = uiObject;
+                    }
+                    if (uiObject.CompareTag("UICombatPanelDice") && UICombatDieUnderPointer is null)
+                    {
+                        UICombatDieUnderPointer = uiObject;
+                    }
                 }
             }
             else
@@ -361,8 +392,8 @@ namespace GameBoard.UI
                 if (tileAtCursor is null) HoveredOverTile = null;
                 else HoveredOverTile = tileAtCursor.GetComponent<MapTile>();
 
-                if (cadreAtCursor is null) HoveredMapObject = null;
-                else HoveredMapObject = cadreAtCursor.GetComponent<MapObject>();
+                if (nonTileObjectAtCursor is null) HoveredMapObject = null;
+                else HoveredMapObject = nonTileObjectAtCursor.GetComponent<MapObject>();
             }
             
             if (PointerInputStatus == InputStatus.Pressed && !PointerIsOverUI)
@@ -412,7 +443,7 @@ namespace GameBoard.UI
             }
 
             HoveredOverTileChanged = false;
-            if (HoveredOverTile != PrevHoveredOverTile)
+            if (HoveredOverTile != PrevHoveredOverTile || HoveredMapObjectChanged)
             {
                 HoveredOverTileChanged = true;
                 if (PrevHoveredOverTile is not null)
@@ -520,12 +551,6 @@ namespace GameBoard.UI
             _uiComponentsByName.Remove(uiComponent.globalName);
             _uiComponents.Remove(uiComponent);
         }
-        
-        
-        public void RegisterAnimatedEvent(AnimatedEvent animatedEvent, bool simultaneous)
-        {
-            throw new NotImplementedException();
-        }
 
         public T GetUIComponent<T>(string name = null) where T : UIComponent
         {
@@ -578,11 +603,11 @@ namespace GameBoard.UI
             // If no UI object, check for objects in the world
             Ray ray = camera.ScreenPointToRay(point);
             RaycastHit hit;
-            GameObject cadre = null;
+            GameObject nonTileObject = null;
             GameObject tile = null;
-            if (Physics.Raycast(ray, out hit, 10000, LayerMask.GetMask("Cadres")))
+            if (Physics.Raycast(ray, out hit, 10000, LayerMask.GetMask("Map Objects")))
             {
-                cadre = hit.transform.gameObject;
+                nonTileObject = hit.transform.gameObject;
             }
 
             if (Physics.Raycast(ray, out hit, 10000, LayerMask.GetMask("Tiles")))
@@ -592,7 +617,7 @@ namespace GameBoard.UI
             //hits = hits.OrderBy(hit => hit.distance).ToArray();
             
 
-            return (uiObjects, cadre, tile);
+            return (uiObjects, nonTileObject, tile);
         }
         public static Vector3 ScreenToZPlane(Camera camera, Vector3 screenPosition, float flatWorldZ)
         {

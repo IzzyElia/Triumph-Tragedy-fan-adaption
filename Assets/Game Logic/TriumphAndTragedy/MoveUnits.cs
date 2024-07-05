@@ -32,7 +32,7 @@ namespace Game_Logic.TriumphAndTragedy
                 cadre.PushMove(new int[] {movementAction.iDestination});
             }
 
-            GameState.GamePhase = GamePhase.SelectCombat;
+            GameState.GamePhase = GamePhase.CommitCombats;
             GameState.PushGlobalFields();
         }
 
@@ -45,6 +45,8 @@ namespace Game_Logic.TriumphAndTragedy
             if (playerFaction == null)
                 return (false, "Nonexistent player faction attempting action");
             if (movesToTest.Count > playerFaction.CommandsAvailable) return (false, "Not enough commands available");
+            
+            // TODO move validation
 
             return (true, string.Empty);
         }

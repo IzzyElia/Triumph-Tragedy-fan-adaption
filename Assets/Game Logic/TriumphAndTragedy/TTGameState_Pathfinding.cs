@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GameBoard;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 
 namespace Game_Logic.TriumphAndTragedy
 {
@@ -12,20 +13,33 @@ namespace Game_Logic.TriumphAndTragedy
         private HashSet<GameTile> c_closedTiles = new ();
         private Dictionary<GameTile, int> c_newTiles = new ();
 
-        
+
+        int CountMoves(UnitType unitType, MoveType moveType)
+        {
+            switch (moveType)
+            {
+                case MoveType.Normal: return unitType.Movement;
+                case MoveType.Redeployment: return unitType.Movement * 2;
+                case MoveType.Rebasing: return unitType.Movement;
+                case MoveType.Support: return unitType.SupportRange;
+                default: throw new NotImplementedException();
+            }
+        }
         /// <summary>
         /// Returns all the tiles accessible to <param name="iCadre"></param> in a move
         /// </summary>
-        public int[] CalculateAccessibleTiles(int iCadre, bool redeployment)
+        public int[] CalculateAccessibleTiles(int iCadre, MoveType moveType)
         {
             GameCadre cadre = GetEntity<GameCadre>(iCadre);
+            if (cadre.UnitType == null) return new int[0];
             lock (c_openTiles)
             {
                 lock (c_closedTiles)
                 {
                     c_closedTiles.Clear();
                     c_openTiles.Clear();
-                    int moves = redeployment ? cadre.UnitType.Movement * 2 : cadre.UnitType.Movement;
+                    int moves = CountMoves(cadre.UnitType, moveType);
+
                     c_openTiles.Add(cadre.Tile, moves);
                     lock (c_newTiles)
                     {
@@ -98,9 +112,9 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
 
-        public int[] CalculateAccessibleTilesAdjecentTo(int iCadre, int iTile, bool redeployment)
+        public int[] CalculateAccessibleTilesAdjecentTo(int iCadre, int iTile, MoveType moveType)
         {
-            ICollection<GameTile> accessibleTiles = GetEntities<GameTile>(CalculateAccessibleTiles(iCadre, redeployment));
+            ICollection<GameTile> accessibleTiles = GetEntities<GameTile>(CalculateAccessibleTiles(iCadre, moveType));
             return accessibleTiles.Where(t => t.ConnectedTileIDs.Contains(iTile)).Select(t => t.ID).ToArray();
         }
         

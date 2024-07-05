@@ -8,8 +8,9 @@ namespace GameBoard.UI
 {
     public class UICardPlayArea : UIWindow
     {
-        private void Start()
+        public override void Start()
         {
+            base.Start();
             _cardPlayPanelPrefab = Resources.Load<GameObject>("Prefabs/CardPlayPanel");
             _diplomacySprite = Resources.Load<Sprite>("Graphics/CardPlayPanelBackgrounds/Diplomacy");
             _insurgentsSprite = Resources.Load<Sprite>("Graphics/CardPlayPanelBackgrounds/Insurgents");

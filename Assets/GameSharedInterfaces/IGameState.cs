@@ -11,9 +11,10 @@ namespace GameSharedInterfaces
         Diplomacy,
         SelectCommandCards,
         GiveCommands,
-        SelectCombat,
+        CommitCombats,
         SelectSupport,
         Combat,
+        SelectNextCombat
     }
     public enum Season
     {
