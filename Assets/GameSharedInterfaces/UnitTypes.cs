@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace GameSharedInterfaces
 {
@@ -35,7 +34,7 @@ namespace GameSharedInterfaces
         public Sprite Sprite;
         public Texture2D CombatPanelSceneTexture;
         public Sprite CombatPanelSceneSprite;
-        public GameObject CombatEffect;
+        public EffectDefinition CombatEffect;
     }
     [Serializable] public class UnitType
     {
@@ -103,7 +102,7 @@ namespace GameSharedInterfaces
             Sprite[] combatPanelSprites = Resources.LoadAll<Sprite>("Graphics/UnitBackdrops/");
             Texture2D[] unitIcons = Resources.LoadAll<Texture2D>("Icons/Units/");
             Sprite[] unitIconSprites = Resources.LoadAll<Sprite>("Icons/Units/");
-            GameObject[] unitCombatEffects = Resources.LoadAll<GameObject>("Graphics/CombatEffects/");
+            EffectDefinition[] unitCombatEffects = Resources.LoadAll<EffectDefinition>("Graphics/CombatEffects/");
 
             ApplyUnitGraphic(combatPanelTextures, (x, graphicsSet) => graphicsSet.CombatPanelSceneTexture = x);
             ApplyUnitGraphic(combatPanelSprites, (x, graphicsSet) => graphicsSet.CombatPanelSceneSprite = x);
@@ -172,6 +171,19 @@ namespace GameSharedInterfaces
                 return graphicsSet.CombatPanelSceneSprite;
             else
                 return unitTypeTexturesByCountry[fallbackKey].CombatPanelSceneSprite;
+        }
+
+        public EffectDefinition GetCombatEffectDefinition(string firstChoiceCountry, string secondChoiceCountry = null)
+        {
+            UnitTypeGraphicsSet graphicsSet;
+            if (unitTypeTexturesByCountry.TryGetValue(firstChoiceCountry, out graphicsSet) &&
+                graphicsSet.CombatEffect is not null)
+                return graphicsSet.CombatEffect;
+            else if (secondChoiceCountry != null && unitTypeTexturesByCountry.TryGetValue(secondChoiceCountry, out graphicsSet) &&
+                     graphicsSet.CombatEffect is not null)
+                return graphicsSet.CombatEffect;
+            else
+                return unitTypeTexturesByCountry[fallbackKey].CombatEffect;
         }
         
 

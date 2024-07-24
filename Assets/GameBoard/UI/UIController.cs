@@ -492,7 +492,7 @@ namespace GameBoard.UI
 
         public void SetActive(bool isActive)
         {
-            if (isActive && !ActiveLocally)
+            if (isActive && !ActiveLocally && GameState.GamePhase != GamePhase.Combat)
             {
                 PlayerStartTurnScreen.Setup(PlayerMapFaction);
             }

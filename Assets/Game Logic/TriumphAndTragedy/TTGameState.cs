@@ -871,6 +871,25 @@ namespace Game_Logic.TriumphAndTragedy
                         faction.CommandInitiative = Random.Range(0, 26);
                         faction.CommandsAvailable = Random.Range(4, 12);
                     }
+
+                    foreach (var cadre in GetEntitiesOfType<GameCadre>())
+                    {
+                        if (cadre is not null)
+                        {
+                            cadre.Pips = Random.Range(1, cadre.MaxPips);
+                            cadre.PushFullState();
+                        }
+                    }
+                    break;
+                case GamePhase.Combat:
+                    RandomizePlayerOrder();
+                    PositionInTurnOrder = 0;
+                    ResetPlayerStatuses(false);
+                    foreach (var faction in GetEntitiesOfType<GameFaction>())
+                    {
+                        faction.CommandInitiative = Random.Range(0, 26);
+                        faction.CommandsAvailable = Random.Range(4, 12);
+                    }
                     break;
                 case GamePhase.InitialPlacement: throw new NotSupportedException();
                 default: 

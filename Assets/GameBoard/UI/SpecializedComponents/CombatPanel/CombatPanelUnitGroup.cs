@@ -33,6 +33,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private CombatPanel _combatPanel;
         private ITTGameState _gameState;
         private UnitType _unitType;
+        private int iFaction;
         private List<ICombatPanelUnit> _panelUnits = new List<ICombatPanelUnit>();
         [SerializeField] private Image background;
         [SerializeField] private Image overlay;
@@ -51,6 +52,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         public void Refresh(ITTGameState gameState, UnitType unitType, IList<IGameCadre> cadres, MapFaction faction)
         {
             this._unitType = unitType;
+            this.iFaction = faction.ID;
             Dictionary<string, int> countryProminance = new Dictionary<string, int>();
             for (int i = 0; i < Math.Max(cadres.Count, _panelUnits.Count); i++)
             {
@@ -101,7 +103,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         
         public void OnCombatStateUpdated()
         {
-            if (_combatPanel.ActiveCombat.initiative == _unitType.IdAndInitiative)
+            if (_combatPanel.ActiveCombat.initiative == _unitType.IdAndInitiative && _combatPanel.ActiveCombat.iPhasingPlayer == iFaction)
             {
                 background.color = _baseColor;
             }
@@ -117,9 +119,17 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             {
                 case CombatSide.Attacker:
                     gridLayout.childAlignment = TextAnchor.UpperLeft;
+                    background.transform.localScale = new Vector3(
+                        -Mathf.Abs(background.transform.localScale.x),
+                        background.transform.localScale.y, 
+                        background.transform.localScale.z);
                     break;
                 case CombatSide.Defender:
                     gridLayout.childAlignment = TextAnchor.UpperRight;
+                    background.transform.localScale = new Vector3(
+                        background.transform.localScale.x,
+                        background.transform.localScale.y, 
+                        background.transform.localScale.z);
                     break;
                 default: throw new NotImplementedException();
             }

@@ -193,6 +193,11 @@ namespace GameLogic
                 syncCheckTimer = 300;
                 foreach (var connection in _approvedConnections)
                 {
+                    if (!connection.IsCreated)
+                    {
+                        connection.Close(_networkDriver);
+                        continue;
+                    }
                     _networkDriver.BeginSend(connection, out DataStreamWriter message);
                     message.WriteByte(NetProtocol.SyncCheck);
                     _networkDriver.EndSend(message);

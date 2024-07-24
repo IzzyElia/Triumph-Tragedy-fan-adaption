@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{8e9d7fe6-f262-403a-a6d5-3b1f372e7efd}">
+		<property name="assetPath">
+			<value>Artillery Hits/Artillery Hit 5.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>4.47702947845805</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{347473ac-7ab8-4273-ad17-cc1188610217}</destination>
+		</relationship>
+	</object>
+</objects>

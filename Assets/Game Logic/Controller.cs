@@ -115,7 +115,9 @@ public class Controller : MonoBehaviour
 
         if (IsHost)
         {
-            
+            if (ActiveLocalClient is not null &&
+                (ActiveLocalClient.GameState.UIController.CombatPanel.AnimationOngoing ||
+                 ActiveLocalClient.GameState.UIController.UnresolvedStateChange)) return;
             int activeLocalPlayer = -1;
             foreach (var client in ActiveClients)
             {

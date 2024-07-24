@@ -1,0 +1,233 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7011950748720232270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Battleship
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Battleship
+  Guid:
+    Data1: 873565990
+    Data2: 1248876157
+    Data3: 864639372
+    Data4: 1991578746
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4000
+--- !u!114 &-6040111891719305841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/ArtilleryHit
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/ArtilleryHit
+  Guid:
+    Data1: -2023173579
+    Data2: 1317479245
+    Data3: 273293461
+    Data4: 2146304397
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2950
+--- !u!114 &-4846165572716826438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Fighter
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Fighter
+  Guid:
+    Data1: -38509173
+    Data2: 1335245300
+    Data3: 1191148469
+    Data4: -526117640
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1850
+--- !u!114 &-2648149466193692463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Rifle
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Rifle
+  Guid:
+    Data1: -2110713777
+    Data2: 1166715684
+    Data3: 1249132972
+    Data4: 90477119
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 435
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d32cf7c32a3ed8347bac48ef5ed56d82, type: 3}
+  m_Name: FMODStudioCache
+  m_EditorClassIdentifier: 
+  EditorBanks:
+  - {fileID: 6567630132427840368}
+  - {fileID: 4867460872726476762}
+  EditorEvents:
+  - {fileID: -7011950748720232270}
+  - {fileID: -6040111891719305841}
+  - {fileID: -2648149466193692463}
+  - {fileID: -4846165572716826438}
+  - {fileID: 8569728604144720511}
+  - {fileID: 3707852495227933053}
+  EditorParameters: []
+  MasterBanks:
+  - {fileID: 4867460872726476762}
+  StringsBanks:
+  - {fileID: 6567630132427840368}
+  cacheTime: 638574197980321938
+  cacheVersion: 131618
+--- !u!114 &3707852495227933053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Bullet Hit
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Bullet Hit
+  Guid:
+    Data1: -1441216315
+    Data2: 1178998242
+    Data3: -480675450
+    Data4: 1365570019
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 500
+--- !u!114 &4867460872726476762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/Master.bank
+  m_EditorClassIdentifier: 
+  Path: FModProject/TT/Build/Desktop/Master.bank
+  Name: Master
+  StudioPath: bank:/Master
+  lastModified: 638574197980287761
+  FileSizes:
+  - Name: Desktop
+    Value: 395200
+  Exists: 1
+--- !u!114 &6567630132427840368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/Master.strings.bank
+  m_EditorClassIdentifier: 
+  Path: FModProject/TT/Build/Desktop/Master.strings.bank
+  Name: Master.strings
+  StudioPath: bank:/Master.strings
+  lastModified: 638574197980321938
+  FileSizes:
+  - Name: Desktop
+    Value: 1056
+  Exists: 1
+--- !u!114 &8569728604144720511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Flying Aeroplane
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Flying Aeroplane
+  Guid:
+    Data1: 1802516868
+    Data2: 1187963460
+    Data3: -244450384
+    Data4: -905517001
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 5
+  Length: 6500

@@ -4,33 +4,27 @@ using Codice.Client.BaseCommands;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GameBoard.UI.SpecializeComponents.CombatPanel
 {
     public class CombatPanelDecisionManager : UIComponent, ICombatPanelAnimationParticipant
     {
-        private static GameObject _dicePrefab;
-
         private CombatPanel _combatPanel;
         private CombatPanelDiceOption[] _diceOptions;
-        private CombatPanelDiceOption _defaultDiceOption;
-        private CombatPanelDie[] _dice = Array.Empty<CombatPanelDie>();
-        private CombatPanelDie grabbedDie;
-        private CombatPanelDie highlightedDie;
+        public CombatDiceDistribution SelectedDiceDistribution;
+        [SerializeField] private Button commitButton;
+
 
         public void Awake()
         {
             _diceOptions = GetComponentsInChildren<CombatPanelDiceOption>();
             for (int i = 0; i < _diceOptions.Length; i++)
             {
-                if (_diceOptions[i].UnitCategory == UnitCategory.Ground)
-                    _defaultDiceOption = _diceOptions[i];
+                _diceOptions[i].DecisionManager = this;
             }
 
-            if (_dicePrefab is null)
-            {
-                _dicePrefab = Resources.Load<GameObject>("Prefabs/CombatPanel/Dice");
-            }
+            commitButton.onClick.AddListener(OnCommitButtonClicked);
         }
 
         private int _lastUpdatedForStage = -1;
@@ -38,74 +32,123 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         public void FullRefresh(CombatPanel combatPanel)
         {
             _combatPanel = combatPanel;
-            RefreshDice();
             
             _lastUpdatedForStage = _combatPanel.ActiveCombat.StageCounter;
             _lastUpdatedDiceAvailable = _combatPanel.ActiveCombat.numDiceAvailable;
+            
+            _removalQueue.Clear();
+            SelectedDiceDistribution = default;
+        }
+
+        public void RefreshDiceOptions()
+        {
+            foreach (var diceOption in _diceOptions)
+            {
+                diceOption.OnDiceDistributionUpdated(SelectedDiceDistribution);
+            }
         }
         
         public void OnCombatStateUpdated()
         {
             if (_combatPanel.ActiveCombat.StageCounter != _lastUpdatedForStage ||
                 _combatPanel.ActiveCombat.numDiceAvailable != _lastUpdatedDiceAvailable)
-                RefreshDice();
+            {
+                FullRefresh(_combatPanel);
+            }
             
             _lastUpdatedForStage = _combatPanel.ActiveCombat.StageCounter;
             _lastUpdatedDiceAvailable = _combatPanel.ActiveCombat.numDiceAvailable;
         }
 
-        void RefreshDice()
+        private List<UnitCategory> _removalQueue = new List<UnitCategory>();
+        public void AdjustDice(UnitCategory unitCategory, short adjustment)
         {
-            Debug.Log("Refreshing dice");
-            foreach (var die in _dice)
+            int diceAvailable = _combatPanel.ActiveCombat.numDiceAvailable;
+            if (adjustment > 0)
             {
-                die.DestroyUIComponent();
-            }
-
-            if (_combatPanel.ActiveCombat.iPhasingPlayer == UIController.iPlayer)
-            {
-                _dice = new CombatPanelDie[_combatPanel.ActiveCombat.numDiceAvailable];
-                for (int i = 0; i < _combatPanel.ActiveCombat.numDiceAvailable; i++)
-                {
-                    _dice[i] = CombatPanelDie.Create(prefab:_dicePrefab, decisionWrapper:this, startingPanel:_defaultDiceOption, startingPanelPositionIndex:i, uiController:UIController);
-                }
-                Debug.Log($"Created {_combatPanel.ActiveCombat.numDiceAvailable} dice");
-            }
-        }
-
-
-        public CombatDiceDistribution GetDiceDistribution()
-        {
-            int airDice = 0;
-            int groundDice = 0;
-            int seaDice = 0;
-            int subDice = 0;
-            for (int i = 0; i < _dice.Length; i++)
-            { ;
-                switch (_dice[i].DroppedOnPanel.UnitCategory)
+                if (adjustment > diceAvailable) adjustment = (short)diceAvailable;
+                switch (unitCategory)
                 {
                     case UnitCategory.Air:
-                        airDice++;
+                        SelectedDiceDistribution.AirDice += adjustment;
                         break;
                     case UnitCategory.Ground:
-                        groundDice++;
+                        SelectedDiceDistribution.GroundDice += adjustment;
                         break;
                     case UnitCategory.Sea:
-                        seaDice++;
+                        SelectedDiceDistribution.SeaDice += adjustment;
                         break;
                     case UnitCategory.Sub:
-                        subDice++;
+                        SelectedDiceDistribution.SubDice += adjustment;
                         break;
-                    default: throw new NotImplementedException();
+                }
+
+                for (int i = 0; i < adjustment; i++)
+                {
+                    _removalQueue.Insert(0, unitCategory);
+                }
+
+                int excessDice = SelectedDiceDistribution.TotalDice - diceAvailable;
+                for (int i = 0; i < excessDice; i++)
+                {
+                    if (_removalQueue.Count > 0)
+                    {
+                        UnitCategory category = _removalQueue[^1];
+                        switch (category)
+                        {
+                            case UnitCategory.Air:
+                                SelectedDiceDistribution.AirDice -= 1;
+                                break;
+                            case UnitCategory.Ground:
+                                SelectedDiceDistribution.GroundDice -= 1;
+                                break;
+                            case UnitCategory.Sea:
+                                SelectedDiceDistribution.SeaDice -= 1;
+                                break;
+                            case UnitCategory.Sub:
+                                SelectedDiceDistribution.SubDice -= 1;
+                                break;
+                        }
+
+                        _removalQueue.RemoveAt(_removalQueue.Count-1);
+                    }
+                    else throw new InvalidOperationException("dice removal queue empty");
                 }
             }
-            return new CombatDiceDistribution
+            else if (adjustment < 0)
             {
-                GroundDice = (ushort)groundDice, 
-                AirDice = (ushort)airDice, 
-                SeaDice = (ushort)seaDice, 
-                SubDice = (ushort)subDice
-            };
+                
+                switch (unitCategory)
+                {
+                    case UnitCategory.Air:
+                        if (SelectedDiceDistribution.AirDice + adjustment < 0)
+                            adjustment = SelectedDiceDistribution.AirDice;
+                        SelectedDiceDistribution.AirDice += adjustment;
+                        break;
+                    case UnitCategory.Ground:
+                        if (SelectedDiceDistribution.GroundDice + adjustment < 0)
+                            adjustment = SelectedDiceDistribution.GroundDice;
+                        SelectedDiceDistribution.GroundDice += adjustment;
+                        break;
+                    case UnitCategory.Sea:
+                        if (SelectedDiceDistribution.SeaDice + adjustment < 0)
+                            adjustment = SelectedDiceDistribution.SeaDice;
+                        SelectedDiceDistribution.SeaDice += adjustment;
+                        break;
+                    case UnitCategory.Sub:
+                        if (SelectedDiceDistribution.SubDice + adjustment < 0)
+                            adjustment = SelectedDiceDistribution.SubDice;
+                        SelectedDiceDistribution.SubDice += adjustment;
+                        break;
+                }
+
+                for (int i = 0; i < -adjustment; i++)
+                {
+                    _removalQueue.Remove(unitCategory);
+                }
+            }
+            
+            RefreshDiceOptions();
         }
 
         public override void OnGamestateChanged()
@@ -116,73 +159,33 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         {
         }
 
+        void OnCommitButtonClicked()
+        {
+            IPlayerAction combatDecisionAction =
+                MapRenderer.GameState.GenerateClientsidePlayerActionByName("CombatDecisionAction");
+            combatDecisionAction.SetAllParameters(SelectedDiceDistribution);
+            combatDecisionAction.Send(CommitButtonCallback);
+            commitButton.interactable = false;
+        }
+
+        void CommitButtonCallback(bool success)
+        {
+            commitButton.interactable = true;
+        }
+
         private Vector3 _grabDelta;
         private CombatPanelDiceOption _hoveredDiceOption;
         public override void UIUpdate()
         {
-            CombatPanelDiceOption hoveredDiceOption = null;
-            if (UIController.PointerInputStatus == InputStatus.Held)
-            {
-                if (grabbedDie is not null)
-                {
-                    grabbedDie.transform.position = UIController.PointerPositionOnScreen + _grabDelta;
-                }
-
-                if ((_hoveredDiceOption is null && UIController.UIDiceOptionUnderPointer is not null) || 
-                    (_hoveredDiceOption is not null && UIController.UIDiceOptionUnderPointer != _hoveredDiceOption.gameObject))
-                {
-                    if (UIController.UIDiceOptionUnderPointer is null) hoveredDiceOption = null;
-                    else hoveredDiceOption = UIController.UIDiceOptionUnderPointer.GetComponent<CombatPanelDiceOption>();
-                    if (hoveredDiceOption is not null) hoveredDiceOption.OnHoveredStatusChanged(true);
-                    if (_hoveredDiceOption is not null) _hoveredDiceOption.OnHoveredStatusChanged(false);
-                    _hoveredDiceOption = hoveredDiceOption;
-                }
-            }
-            else if (UIController.PointerInputStatus == InputStatus.Pressed)
-            {
-                if (UIController.UIObjectAtPointer.CompareTag("UICombatPanelDice"))
-                {
-                    grabbedDie = UIController.UIObjectAtPointer.GetComponent<CombatPanelDie>();
-                    grabbedDie.transform.SetParent(_combatPanel.transform);
-                    _grabDelta = grabbedDie.transform.position - UIController.PointerPositionOnScreen;
-                }
-            }
-            else if (UIController.PointerInputStatus == InputStatus.Releasing)
-            {
-                if (grabbedDie is not null)
-                {
-                    if (UIController.UIDiceOptionUnderPointer is not null)
-                    {
-                        grabbedDie.transform.SetParent(UIController.UIDiceOptionUnderPointer.transform);
-                        grabbedDie.DroppedOnPanel = UIController.UIDiceOptionUnderPointer.GetComponent<CombatPanelDiceOption>();
-                        grabbedDie.transform.position = UIController.PointerPositionOnScreen + _grabDelta;
-                        grabbedDie = null;
-                    }
-                    else
-                    {
-                        grabbedDie.transform.position = UIController.PointerPositionOnScreen + _grabDelta;
-                        grabbedDie = null;
-                    }
-
-                    if (_hoveredDiceOption is not null)
-                    {
-                        _hoveredDiceOption.OnHoveredStatusChanged(false);
-                        _hoveredDiceOption = null;
-
-                    }
-                }
-
-                if (_hoveredDiceOption is not null)
-                {
-                    _hoveredDiceOption.OnHoveredStatusChanged(false);
-                    _hoveredDiceOption = null;
-                }
-            }
+            
         }
 
         public void CombatAnimation(CombatAnimationData animationData, AnimationTimeData timeData)
         {
-            
+            foreach (var diceOption in _diceOptions)
+            {
+                diceOption.CombatAnimation(animationData, timeData);
+            }
         }
     }
 }

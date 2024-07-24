@@ -6,7 +6,7 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
     {
         public int CombatUID { get; }
         public int iTile{ get; }
-        public List<CombatRoll> CombatRolls{ get; }
+        public List<CombatRoll> CombatRolls { get; }
         public int[] iSupportingCadres{ get; }
         public int iAttackerFaction{ get; }
         public int iDefenderFaction{ get; }

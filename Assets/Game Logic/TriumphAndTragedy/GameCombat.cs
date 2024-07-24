@@ -110,7 +110,7 @@ namespace Game_Logic.TriumphAndTragedy
             AdvanceInitiativeAndResolve();
         }
 
-        public void ResolveCurrentInitiative()
+        void ResolveCurrentInitiative()
         {
             Debug.Log($"Resolving initiative {initiative}");
             if (!GameState.IsServer) throw new ServerOnlyException();
@@ -134,17 +134,36 @@ namespace Game_Logic.TriumphAndTragedy
             if (attackerFiresFirst)
             {
                 Debug.Log("Attacker firing first");
-                if (attackerUnitsAtInitiative.Length > 0) initiativeFiringQueue.Enqueue(iAttackerFaction);
-                if (defenderUnitsAtInitiative.Length > 0) initiativeFiringQueue.Enqueue(iDefenderFaction);
+                if (attackerUnitsAtInitiative.Length > 0)
+                {
+                    Debug.Log("Attacker has units");
+                    initiativeFiringQueue.Enqueue(iAttackerFaction);
+                }
+
+                if (defenderUnitsAtInitiative.Length > 0)
+                {
+                    Debug.Log("Defender has units");
+                    initiativeFiringQueue.Enqueue(iDefenderFaction);
+                }
             }
             else
             {
                 Debug.Log("Defender firing first");
-                if (defenderUnitsAtInitiative.Length > 0) initiativeFiringQueue.Enqueue(iDefenderFaction);
-                if (attackerUnitsAtInitiative.Length > 0) initiativeFiringQueue.Enqueue(iAttackerFaction);
+                if (defenderUnitsAtInitiative.Length > 0)
+                {
+                    Debug.Log("Defender has units");
+                    initiativeFiringQueue.Enqueue(iDefenderFaction);
+                }
+
+                if (attackerUnitsAtInitiative.Length > 0)
+                {
+                    Debug.Log("Attacker has units");
+                    initiativeFiringQueue.Enqueue(iAttackerFaction);
+                }
             }
 
-            PassToPlayerControl(units, iPhasingPlayer:initiativeFiringQueue.Peek());
+            if (initiativeFiringQueue.TryDequeue(out int iPhasingPlayer)) PassToPlayerControl(units, iPhasingPlayer);
+            else throw new InvalidOperationException("No players at initiative have units. ResolveCurrentInitiative should only be called when there are available units at the current initiative");
         }
         
         void AdvanceInitiativeAndResolve()
@@ -179,27 +198,23 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
 
-        void RollCombatAtCurrentInitiative(int iPlayer, CombatDiceDistribution combatDiceDistribution)
+        public 
+        (List<GameCadre> unitsAtInitiativeOfCurrentPlayer,
+        List<GameCadre> opposingGroundUnits,            
+        List<GameCadre> opposingAirUnits,
+        List<GameCadre> opposingSeaUnits,
+        List<GameCadre> opposingSubUnits)
+        CalculateUnitsAtInitiativeOfCurrentPlayer(GameCadre[] units, GameFaction playerFaction, GameFaction opposingFaction)
         {
-            string whosrolling = iPlayer == iAttackerFaction ? "Attacker" : "Defender";
-            Debug.Log($"{whosrolling} rolling...");
-            Random.InitState(Time.time.GetHashCode());
-
-            GameFaction playerFaction = GameState.GetEntity<GameFaction>(iPlayer);
-            GameFaction opposingFaction = iPlayer == iAttackerFaction
-                ? GameState.GetEntity<GameFaction>(iDefenderFaction)
-                : GameState.GetEntity<GameFaction>(iAttackerFaction);
-            GameCadre[] units = CalculateInvolvedCadres();
             List<GameCadre> unitsAtInitiativeOfCurrentPlayer = new List<GameCadre>();
             List<GameCadre> opposingGroundUnits = new List<GameCadre>();
             List<GameCadre> opposingAirUnits = new List<GameCadre>();
             List<GameCadre> opposingSeaUnits = new List<GameCadre>();
             List<GameCadre> opposingSubUnits = new List<GameCadre>();
-            UnitType firingUnitType = UnitType.GetModifiedUnitType(GameState.Ruleset.unitTypes[initiative], playerFaction.iTechs);
             
             foreach (var cadre in units)
             {
-                if (cadre.Faction.ID == iPlayer && cadre.UnitType.IdAndInitiative == initiative) unitsAtInitiativeOfCurrentPlayer.Add(cadre);
+                if (cadre.Faction.ID == iPhasingPlayer && cadre.UnitType.IdAndInitiative == initiative) unitsAtInitiativeOfCurrentPlayer.Add(cadre);
                 else
                 {
                     switch (cadre.UnitType.Category)
@@ -220,14 +235,34 @@ namespace Game_Logic.TriumphAndTragedy
                     }
                 }
             }
+            return (unitsAtInitiativeOfCurrentPlayer, opposingGroundUnits, opposingAirUnits, opposingSeaUnits, opposingSubUnits);
+        }
 
-            foreach (var playerCadre in unitsAtInitiativeOfCurrentPlayer)
+        public void RollCombatAtCurrentInitiative(CombatDiceDistribution combatDiceDistribution)
+        {
+            string whosrolling = iPhasingPlayer == iAttackerFaction ? "Attacker" : "Defender";
+            Debug.Log($"{whosrolling} rolling...");
+            Random.InitState(Time.time.GetHashCode());
+            GameFaction playerFaction = GameState.GetEntity<GameFaction>(iPhasingPlayer);
+            GameFaction opposingFaction = iPhasingPlayer == iAttackerFaction
+                ? GameState.GetEntity<GameFaction>(iDefenderFaction)
+                : GameState.GetEntity<GameFaction>(iAttackerFaction);
+            GameCadre[] units = CalculateInvolvedCadres();
+            (List<GameCadre> unitsAtInitiativeOfCurrentPlayer,
+                List<GameCadre> opposingGroundUnits,
+                List<GameCadre> opposingAirUnits,
+                List<GameCadre> opposingSeaUnits,
+                List<GameCadre> opposingSubUnits) initiativeData = CalculateUnitsAtInitiativeOfCurrentPlayer(units, playerFaction, opposingFaction);
+            UnitType firingUnitType = UnitType.GetModifiedUnitType(GameState.Ruleset.unitTypes[initiative], playerFaction.iTechs);
+
+
+            foreach (var playerCadre in initiativeData.unitsAtInitiativeOfCurrentPlayer)
             {
                 CombatRoll combatRoll;
                 GameCadre target;
                 if (combatDiceDistribution.GroundDice > 0)
                 {
-                    target = PickTarget(opposingGroundUnits);
+                    target = PickTarget(initiativeData.opposingGroundUnits);
                     int dieRoll = Random.Range(1, 7);
                     combatRoll = new CombatRoll()
                     {
@@ -241,7 +276,7 @@ namespace Game_Logic.TriumphAndTragedy
                 }
                 else if (combatDiceDistribution.AirDice > 0)
                 {
-                    target = PickTarget(opposingAirUnits);
+                    target = PickTarget(initiativeData.opposingAirUnits);
                     int dieRoll = Random.Range(1, 7);
                     combatRoll = new CombatRoll()
                     {
@@ -255,7 +290,7 @@ namespace Game_Logic.TriumphAndTragedy
                 }
                 else if (combatDiceDistribution.SeaDice > 0)
                 {
-                    target = PickTarget(opposingSeaUnits);
+                    target = PickTarget(initiativeData.opposingSeaUnits);
                     int dieRoll = Random.Range(1, 7);
                     combatRoll = new CombatRoll()
                     {
@@ -269,7 +304,7 @@ namespace Game_Logic.TriumphAndTragedy
                 }
                 else if (combatDiceDistribution.SubDice > 0)
                 {
-                    target = PickTarget(opposingSubUnits);
+                    target = PickTarget(initiativeData.opposingSubUnits);
                     int dieRoll = Random.Range(1, 7);
                     combatRoll = new CombatRoll()
                     {
@@ -294,6 +329,7 @@ namespace Game_Logic.TriumphAndTragedy
             }
             else
             {
+                initiative++;
                 AdvanceInitiativeAndResolve();
             }
         }
@@ -327,7 +363,7 @@ namespace Game_Logic.TriumphAndTragedy
                 
                 case CombatDamageRule.RandomEvenSpread:
                     List<GameCadre> validTargets = new List<GameCadre>();
-                    int highestPips = int.MaxValue;
+                    int highestPips = 0;
                     foreach (var potentialTarget in potentialTargets)
                     {
                         if (potentialTarget.Pips > highestPips)
@@ -375,6 +411,10 @@ namespace Game_Logic.TriumphAndTragedy
             }
             GameState.ActiveCombat = null;
             GameState.PushCombatState();
+            // TODO Advance out of combat. And eventually advance out of combats
+            // Advancing out of combat - return to select next combat phase
+            // Finishing combats together - advance the turn marker until a player with commands is hit.
+            // If all players checked, 
         }
         
         public void ReceiveFullState(TTGameState gameState, ref DataStreamReader incomingMessage)

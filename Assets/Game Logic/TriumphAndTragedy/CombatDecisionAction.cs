@@ -1,6 +1,10 @@
+using System;
 using GameLogic;
+using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy.ForcedInitialization;
 using Unity.Collections;
+using UnityEngine;
 
 namespace Game_Logic.TriumphAndTragedy
 {
@@ -12,9 +16,12 @@ namespace Game_Logic.TriumphAndTragedy
             RegisterPlayerActionType<CombatDecisionAction>();
         }
 
+        private CombatDiceDistribution _diceDistribution;
+
         public override void Execute()
         {
-            throw new System.NotImplementedException();
+            Debug.Log("Attempting combat action...");
+            GameState.ActiveCombat.RollCombatAtCurrentInitiative(_diceDistribution);
         }
 
         public override (bool, string) TestParameter(params object[] parameter)
@@ -34,7 +41,7 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override void SetAllParameters(params object[] parameters)
         {
-            throw new System.NotImplementedException();
+            _diceDistribution = (CombatDiceDistribution)parameters[0];
         }
 
         public override object[] GetParameters()
@@ -49,22 +56,64 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override (bool, string) Validate()
         {
-            throw new System.NotImplementedException();
+            Debug.LogWarning("Dont forget to implement validation for combat dice actions");
+            if (GameState.ActiveCombat.iPhasingPlayer != iPlayerFaction)
+                return (false, "You are not the phasing player in combat");
+
+            IGameCadre[] cadres = GameState.ActiveCombat.CalculateInvolvedCadreInterfaces();
+            bool validatedAir = _diceDistribution.AirDice <= 0;
+            bool validatedGround = _diceDistribution.GroundDice <= 0;
+            bool validatedSea = _diceDistribution.SeaDice <= 0;
+            bool validatedSub = _diceDistribution.SubDice <= 0;
+            if (_diceDistribution.TotalDice < GameState.ActiveCombat.numDiceAvailable)
+                return (false, "Not enough dice assigned");
+            else if (_diceDistribution.TotalDice > GameState.ActiveCombat.numDiceAvailable)
+                return (false, "Too many dice assigned");
+            foreach (var cadre in cadres)
+            {
+                if (cadre.IFaction.ID == iPlayerFaction)
+                {
+                    // TODO validate dice counts match unit counts
+                }
+                else 
+                {
+                    switch (cadre.UnitType.Category)
+                    {
+                        case UnitCategory.Air:
+                            validatedAir = true;
+                            break;
+                        case UnitCategory.Ground:
+                            validatedGround = true;
+                            break;
+                        case UnitCategory.Sea:
+                            validatedSea = true;
+                            break;
+                        case UnitCategory.Sub:
+                            validatedSub = true;
+                            break;
+                        default: throw new NotImplementedException();
+                    }
+            }
+        }
+
+            if (!(validatedAir && validatedGround && validatedSea && validatedSub))
+                return (false, "Some dice are set to target unit types which are not present");
+            return (true, null);
         }
 
         public override void Recreate(ref DataStreamReader incomingMessage)
         {
-            throw new System.NotImplementedException();
+            _diceDistribution = CombatDiceDistribution.Recreate(ref incomingMessage);
         }
 
         public override void Write(ref DataStreamWriter outgoingMessage)
         {
-            throw new System.NotImplementedException();
+            _diceDistribution.Write(ref outgoingMessage);
         }
 
         public override void Reset()
         {
-            throw new System.NotImplementedException();
+            _diceDistribution = default;
         }
     }
 }

@@ -60,23 +60,6 @@ MonoBehaviour:
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
-  - Name: Carrier
-    GroundAttack: 1
-    SeaAttack: 2
-    AirAttack: 2
-    SubAttack: 2
-    Movement: 3
-    SupportRange: 2
-    RedeploymentMovement: 0
-    Category: 2
-    RebaseRule: 2
-    FireAndRetreatRule: 0
-    HasFirstFire: 0
-    TakesDoubleHits: 1
-    IsFortress: 0
-    IsBuildableThroughNormalPlacementRules: 1
-    IsTransportType: 0
-    TechModifiers: []
   - Name: Submarine
     GroundAttack: 0
     SeaAttack: 1

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using GameBoard.UI.SpecializeComponents.CombatPanel.Effects;
+using GameBoard.UI.SpecializedComponents.CombatPanel.Effects;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy;
@@ -13,6 +13,38 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
 {
     public class CombatPanel : UIWindow, ICombatPanelAnimationParticipant
     {
+        public struct CombatAnimationResolveInfo
+        {
+            public UnitType UnitType;
+            public CombatSide Side;
+            public UnitCategory TargetCategory;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(UnitType.IdAndInitiative.GetHashCode(), Side.GetHashCode(), TargetCategory.GetHashCode());
+            }
+    
+            public static bool operator == (CombatAnimationResolveInfo left, CombatAnimationResolveInfo right)
+            {
+                return left.UnitType == right.UnitType && left.Side == right.Side && left.TargetCategory == right.TargetCategory;
+            }
+    
+            public static bool operator != (CombatAnimationResolveInfo left, CombatAnimationResolveInfo right)
+            {
+                return !(left == right);
+            }
+    
+            public override bool Equals(object obj)
+            {
+                if(obj is CombatAnimationResolveInfo)
+                {
+                    var other = (CombatAnimationResolveInfo)obj;      
+                    return this == other;
+                }
+        
+                return false;
+            }
+        }
         enum RefreshQueueState
         {
             None,
@@ -30,12 +62,20 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         [FormerlySerializedAs("backgroundDarkenerImage")] [SerializeField] private Image background;
         private Color _backgroundBaseColor;
         public IGameCombat ActiveCombat = null;
-        public EffectsStageManager CombatScene;
+        [NonSerialized] public EffectsStageManager CombatEffectStage;
+        public static HashSet<uint> resolvedCombatRolls = new HashSet<uint>(); 
+        // ^ NOTE THAT THIS IS STATIC ^ - Combat animations only play once per machine, rather than per player,
+        // this is to avoid repeating animations in hotseat which get annoying
 
         protected override void Awake()
         {
             base.Awake();
             _backgroundBaseColor = background.color;
+        }
+
+        private void OnEnable()
+        {
+            CombatEffectStage = EffectsStageManager.Instance;
         }
 
         public override void Start()
@@ -49,7 +89,10 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
 
         public void FullRefresh()
         {
+            ActiveCombat = GameState.GetActiveCombat();
             if (ActiveCombat == null) return;
+            
+            resolvedCombatRolls.Clear();
             
             IGameCadre[] cadres = ActiveCombat.CalculateInvolvedCadreInterfaces();
             HashsetDictionary<UnitType, IGameCadre> attackers = new HashsetDictionary<UnitType, IGameCadre>();
@@ -126,13 +169,63 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
         }
 
+        private int _lastResolvedCombatRollCount = 0;
+        public bool RefreshAllowed = true;
         public override void OnGamestateChanged()
         {
-            ActiveCombat = GameState.GetActiveCombat();
-            if (ActiveCombat?.CombatUID != ActiveCombat?.CombatUID) _refreshQueueState = RefreshQueueState.FullRefresh;
-            else if (ActiveCombat != null && _refreshQueueState != RefreshQueueState.FullRefresh) _refreshQueueState = RefreshQueueState.CombatStateUpdated;
+            IGameCombat gamestateActiveCombat = GameState.GetActiveCombat();
+            if (gamestateActiveCombat?.CombatUID != ActiveCombat?.CombatUID && ActiveCombat == null) _refreshQueueState = RefreshQueueState.FullRefresh;
+            else if (ActiveCombat != null) _refreshQueueState = RefreshQueueState.CombatStateUpdated;
             
-            
+            if (ActiveCombat is not null && ActiveCombat.CombatRolls.Count > _lastResolvedCombatRollCount)
+            {
+                _lastResolvedCombatRollCount = ActiveCombat.CombatRolls.Count;
+                CombatAnimationResolveInfo currentResolveGroup = default;
+                List<CombatRoll> combatRollGroup = new List<CombatRoll>();
+                foreach (var unresolvedRoll in GetUnresolvedCombatRollsAndMarkAsResolved())
+                {
+                    MapCadre shooter = MapRenderer.GetCadreByID(unresolvedRoll.iShooter);
+                    MapCadre target = MapRenderer.GetCadreByID(unresolvedRoll.iTarget);
+                    CombatAnimationResolveInfo shooterResolveGroup = new CombatAnimationResolveInfo()
+                    {
+                        Side = shooter.MapCountry.faction.ID == ActiveCombat.iAttackerFaction
+                            ? CombatSide.Attacker
+                            : CombatSide.Defender,
+                        UnitType = shooter.UnitType,
+                        TargetCategory = target.UnitType.Category
+                    };
+                    if (currentResolveGroup == default) currentResolveGroup = shooterResolveGroup;
+                    if (shooterResolveGroup == currentResolveGroup)
+                    {
+                        combatRollGroup.Add(unresolvedRoll);
+                    }
+                    else
+                    {
+                        CombatAnimationData animationData = new CombatAnimationData()
+                        {
+                            animatingRolls = combatRollGroup.ToArray(),
+                            firingSide = currentResolveGroup.Side,
+                            firingTargetType = currentResolveGroup.TargetCategory,
+                            firingUnitType = currentResolveGroup.UnitType
+                        };
+                        QueueAnimation(animationData);
+                        currentResolveGroup = default;
+                        combatRollGroup.Clear();
+                    }
+                }
+
+                if (currentResolveGroup != default)
+                {
+                    CombatAnimationData animationData = new CombatAnimationData()
+                    {
+                        animatingRolls = combatRollGroup.ToArray(),
+                        firingSide = currentResolveGroup.Side,
+                        firingTargetType = currentResolveGroup.TargetCategory,
+                        firingUnitType = currentResolveGroup.UnitType
+                    };
+                    QueueAnimation(animationData);
+                }
+            }
         }
 
         public override void OnResyncEnded()
@@ -154,22 +247,49 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             PanelRenderer.SetActive(false);
             background.enabled = false;
         }
+
+        List<CombatRoll> GetUnresolvedCombatRollsAndMarkAsResolved()
+        {
+            List<CombatRoll> rolls = new List<CombatRoll>();
+            foreach (var roll in ActiveCombat.CombatRolls)
+            {
+                if (resolvedCombatRolls.Contains(roll.UID)) continue;
+                rolls.Add(roll);
+                resolvedCombatRolls.Add(roll.UID);
+            }
+
+            return rolls;
+        }
         
         
         // Combat animation system
         public float _darkenTime = 0.5f;
-        public float TotalAnimationTime = 2.5f;
+        public float TotalAnimationTime = 7f;
         [NonSerialized] public float AnimationTime = 0;
         public float AnimationProgress => TotalAnimationTime > 0 ? AnimationTime / TotalAnimationTime : 1;
         public bool AnimationOngoing => _animationData.Count > 0;
         private Queue<CombatAnimationData> _animationData = new ();
         private List<ICombatPanelAnimationParticipant> _animationParticipants = new ();
-        private List<CombatPanelEffect> _activeEffects = new ();
-
+        private CombatPanelEffect _activeEffect;
+        private bool _firstFrame = true;
         void AdvanceAnimation(float deltaTime)
         {
             CombatAnimationData currentAnimationData = _animationData.Peek();
             float halfAnimationTime = TotalAnimationTime / 2f;
+            AnimationState animationState;
+            if (_firstFrame)
+            {
+                animationState = AnimationState.FirstFrame;
+            }
+            else if (AnimationTime >= TotalAnimationTime)
+            {
+                animationState = AnimationState.LastFrame;
+            }
+            else
+            {
+                animationState = AnimationState.Ongoing;
+            }
+            
             AnimationTimeData timeData = new AnimationTimeData()
             {
                 Time = AnimationTime,
@@ -177,23 +297,40 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                 DarkenProgress = Mathf.Clamp(
                     TotalAnimationTime - Mathf.Abs((AnimationTime  / _darkenTime) - TotalAnimationTime), 
                     0, 
-                    1)
+                    1),
+                AnimationState = animationState
             };
+
+            if (_firstFrame)
+            {
+                InitializeAnimation(currentAnimationData, timeData);
+                _firstFrame = false;
+            }
+            
             this.CombatAnimation(currentAnimationData, timeData);
             foreach (var animationParticipant in _animationParticipants)
             {
                 animationParticipant.CombatAnimation(currentAnimationData, timeData);
             }
+            if (_activeEffect is not null) 
+                _activeEffect.UpdateAnimationState(timeData);
 
             if (AnimationTime >= TotalAnimationTime)
             {
                 _animationData.Dequeue();
                 AnimationTime = 0;
+                _firstFrame = true;
+                if (_activeEffect is not null)
+                {
+                    _activeEffect.Kill();
+                    _activeEffect = null;
+                }
             }
             else
             {
                 AnimationTime += deltaTime;
             }
+            Debug.Log($"Animation time:{AnimationTime}");
         }
 
         public void QueueAnimation(CombatAnimationData animationData)
@@ -228,42 +365,31 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             switch (timeData.AnimationState)
             {
                 case AnimationState.FirstFrame:
-                    int numFlashes = Random.Range(3, 15) * animationData.animatingRolls.Length;
-                    muzzleFlashes = new MuzzleFlashData[numFlashes];
-                    for (int i = 0; i < numFlashes; i++)
-                    {
-                        muzzleFlashes[i] = new MuzzleFlashData()
-                        {
-                            position = new Vector3(Random.value, Random.value, Random.value),
-                            size = Random.value * 0.5f,
-                            startTime = Random.value * (timeData.TotalAnimationTime - timeData.TotalAnimationTime * 0.2f)
-                        };
-                    }
-                    instantiatedMuzzleFlashes.Clear();
+
                     break;
+                    
             }
-            float projectileStartPoint = timeData.TotalAnimationTime / 2f;
             background.color = new Color(_backgroundBaseColor.r * timeData.DarkenProgress, _backgroundBaseColor.g * timeData.DarkenProgress, _backgroundBaseColor.b * timeData.DarkenProgress, _backgroundBaseColor.a);
-            
-            
-            
-            for (int i = 0; i < muzzleFlashes.Length; i++)
-            {
-                if (!instantiatedMuzzleFlashes.Contains(i) && muzzleFlashes[i].startTime <= timeData.Time)
-                {
-                    //MuzzleFlash muzzleFlash = MuzzleFlash.Create(this, animationData, timeData);
-                } 
-            }
         }
 
-        public void RegisterCombatEffect(CombatPanelEffect effect)
+        void InitializeAnimation(CombatAnimationData animationData, AnimationTimeData timeData)
         {
-            _activeEffects.Add(effect);
-        }
-        
-        public void DeregisterCombatEffect(CombatPanelEffect effect)
-        {
-            _activeEffects.Remove(effect);
+            if (_activeEffect is not null)
+            {
+                _activeEffect.Kill();
+                _activeEffect = null;
+            }
+            
+            MapFaction faction = animationData.firingSide == CombatSide.Attacker
+                ? MapRenderer.MapFactionsByID[ActiveCombat.iAttackerFaction]
+                : MapRenderer.MapFactionsByID[ActiveCombat.iDefenderFaction];
+            
+            EffectDefinition effectDefinition =
+                animationData.firingUnitType.GetCombatEffectDefinition(faction.leader.name);
+            
+            if (effectDefinition is null) Debug.LogWarning($"No effect definition found for {animationData.firingUnitType.Name} ({faction.leader.name})");
+            
+            _activeEffect = CombatPanelEffect.Generate(CombatEffectStage, animationData, effectDefinition);
         }
     }
 }
