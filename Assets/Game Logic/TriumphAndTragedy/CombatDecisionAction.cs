@@ -56,9 +56,16 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override (bool, string) Validate()
         {
-            Debug.LogWarning("Dont forget to implement validation for combat dice actions");
+            if (GameState.ActiveCombat == null)
+            {
+                return (false, "No combat ongoing");
+            }
+
+            // If the action was submitted by a combat panel controlled by another local client then it is still valid
             if (GameState.ActiveCombat.iPhasingPlayer != iPlayerFaction)
+            {
                 return (false, "You are not the phasing player in combat");
+            }
 
             IGameCadre[] cadres = GameState.ActiveCombat.CalculateInvolvedCadreInterfaces();
             bool validatedAir = _diceDistribution.AirDice <= 0;
@@ -93,9 +100,8 @@ namespace Game_Logic.TriumphAndTragedy
                             break;
                         default: throw new NotImplementedException();
                     }
+                }
             }
-        }
-
             if (!(validatedAir && validatedGround && validatedSea && validatedSub))
                 return (false, "Some dice are set to target unit types which are not present");
             return (true, null);

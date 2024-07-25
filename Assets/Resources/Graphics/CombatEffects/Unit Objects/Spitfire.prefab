@@ -139,7 +139,7 @@ MonoBehaviour:
   shotPattern: 2
   minShotsPerUnit: 4
   MaxShotsPerUnit: 9
-  burstSeperation: 0.15
+  burstSeperation: 0.25
 --- !u!114 &-4924905680348365784
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -113,14 +113,21 @@ namespace Game_Logic.TriumphAndTragedy
         public bool IsRevealedTo(int iPlayer)
         {
             TTGameState ttGameState = (TTGameState)GameState;
-            if (ttGameState.GamePhase == GamePhase.SelectNextCombat || ttGameState.GamePhase == GamePhase.Combat)
+            if (Faction == null || iPlayer == Faction.ID)
+                return true;
+
+            foreach (var combat in ttGameState.CommittedCombats)
             {
-                foreach (var combat in ttGameState.CommittedCombats)
+                if (combat.iTile == Tile.ID)
                 {
-                    if (combat.iTile == Tile.ID) return true;
+                    return true;
                 }
             }
-            return Faction == null ? true : iPlayer == Faction.ID;
+
+            if (ttGameState.ActiveCombat?.iTile == Tile.ID)
+                return true;
+
+            return false;
         }
 
         
@@ -169,6 +176,7 @@ namespace Game_Logic.TriumphAndTragedy
             MapTile tile = MapRenderer.MapTilesByID[iTile];
             MapCountry country = MapRenderer.MapCountriesByID[iCountry];
             UnitType mapCadreUnitType = this.UnitType == null ? UnitType.Unknown : this.UnitType;
+
             if (MapCadre is null)
             {
                 try

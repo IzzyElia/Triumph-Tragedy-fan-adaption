@@ -6,6 +6,7 @@ using System.Threading;
 using Game_Logic.TriumphAndTragedy;
 using GameBoard;
 using GameBoard.UI;
+using GameBoard.UI.SpecializeComponents.CombatPanel;
 using GameLogic;
 using GameSharedInterfaces;
 using Izzy.ForcedInitialization;
@@ -119,26 +120,29 @@ public class Controller : MonoBehaviour
                 (ActiveLocalClient.GameState.UIController.CombatPanel.AnimationOngoing ||
                  ActiveLocalClient.GameState.UIController.UnresolvedStateChange)) return;
             int activeLocalPlayer = -1;
-            foreach (var client in ActiveClients)
+            if (ActiveLocalClient == null || CombatPanel.ShowingFinalResult == false)
             {
-                if (client.GameState.IsWaitingOnPlayer(client.GameState.iPlayer))
+                foreach (var client in ActiveClients)
                 {
-                    if (!ClientReadyToBeActivated(client)) break;
-                    activeLocalPlayer = client.GameState.iPlayer;
-                    break;
-                }
-            }
-            foreach (var client in ActiveClients)
-            {
-                if (client.GameState.iPlayer == activeLocalPlayer)
-                {
-                    if (!ClientReadyToBeActivated(client)) break;
-                    ActiveLocalClient = client;
-                    client.GameState.UIController.SetActive(true);
-                    foreach (var otherClient in ActiveClients)
+                    if (client.GameState.IsWaitingOnPlayer(client.GameState.iPlayer))
                     {
-                        // TODO This breaks when there are unconnected/uninitialized clients
-                        if (otherClient != client) otherClient.GameState.UIController.SetActive(false);
+                        if (!ClientReadyToBeActivated(client)) break;
+                        activeLocalPlayer = client.GameState.iPlayer;
+                        break;
+                    }
+                }
+                foreach (var client in ActiveClients)
+                {
+                    if (client.GameState.iPlayer == activeLocalPlayer)
+                    {
+                        if (!ClientReadyToBeActivated(client)) break;
+                        ActiveLocalClient = client;
+                        client.GameState.UIController.SetActive(true);
+                        foreach (var otherClient in ActiveClients)
+                        {
+                            // TODO This breaks when there are unconnected/uninitialized clients
+                            if (otherClient != client) otherClient.GameState.UIController.SetActive(false);
+                        }
                     }
                 }
             }

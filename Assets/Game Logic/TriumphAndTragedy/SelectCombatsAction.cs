@@ -59,6 +59,10 @@ namespace Game_Logic.TriumphAndTragedy
             // Set the game phase and push
             GameState.GamePhase = GamePhase.SelectSupport;
             GameState.AdvanceToCombatIfAllPlayersDoneWithSupport(push:false);
+            foreach (var cadre in GameState.GetEntitiesOfType<GameCadre>())
+            {
+                if (cadre is not null && cadre.Active) cadre.PushFullState();
+            }
             GameState.PushGlobalFields();
         }
 

@@ -16,6 +16,8 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             if (unitObject is null) throw new InvalidOperationException("Unit prefab not found");
             CombatPanelUnit unitController = unitObject.GetComponent<CombatPanelUnit>();
             if (unitController is null) throw new InvalidOperationException($"Combat panel unit prefab does not have the required component");
+            unitGroup.UIController.RegisterUIComponent(unitController);
+            unitController.UIController = unitGroup.UIController;
             unitController.SetBaseValues(pips:pips, maxPips:maxPips, unitType:unitType, country:country);
             return unitController;
         }

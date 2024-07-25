@@ -399,10 +399,11 @@ namespace Game_Logic.TriumphAndTragedy
 
             return dice;
         }
-
+        
         void EndCombat()
         {
             Debug.Log("Ending combat");
+            CombatPanel.ShowingFinalResult = true;
             foreach (var cadre in GameState.GetEntitiesOfType<GameCadre>())
             {
                 if (cadre is null) continue;
@@ -410,6 +411,15 @@ namespace Game_Logic.TriumphAndTragedy
                     cadre.Kill();
             }
             GameState.ActiveCombat = null;
+            if (GameState.CommittedCombats.Count > 0)
+            {
+                GameState.GamePhase = GamePhase.SelectNextCombat;
+                GameState.PushGlobalFields();
+            }
+            else
+            {
+                GameState.AdvanceCommandingPhasingPlayer();
+            }
             GameState.PushCombatState();
             // TODO Advance out of combat. And eventually advance out of combats
             // Advancing out of combat - return to select next combat phase

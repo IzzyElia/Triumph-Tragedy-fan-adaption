@@ -14,6 +14,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private CombatPanelDiceOption[] _diceOptions;
         public CombatDiceDistribution SelectedDiceDistribution;
         [SerializeField] private Button commitButton;
+        [SerializeField] private Button closeButton;
 
 
         public void Awake()
@@ -25,6 +26,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
 
             commitButton.onClick.AddListener(OnCommitButtonClicked);
+            closeButton.onClick.AddListener(OnCloseButtonClicked);
         }
 
         private int _lastUpdatedForStage = -1;
@@ -58,6 +60,11 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             
             _lastUpdatedForStage = _combatPanel.ActiveCombat.StageCounter;
             _lastUpdatedDiceAvailable = _combatPanel.ActiveCombat.numDiceAvailable;
+
+            foreach (var diceOption in _diceOptions)
+            {
+                diceOption.OnDiceDistributionUpdated(default);
+            }
         }
 
         private List<UnitCategory> _removalQueue = new List<UnitCategory>();
@@ -151,12 +158,31 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             RefreshDiceOptions();
         }
 
+        private bool ShowCloseButton = false;
         public override void OnGamestateChanged()
         {
+            if (_combatPanel is not null)
+            {
+                if (CombatPanel.ShowingFinalResult)
+                {
+                    commitButton.gameObject.SetActive(false);
+                    closeButton.gameObject.SetActive(true);
+                }
+                else
+                {
+                    commitButton.gameObject.SetActive(true);
+                    closeButton.gameObject.SetActive(false);
+                }
+            }
         }
 
         public override void OnResyncEnded()
         {
+        }
+
+        void OnCloseButtonClicked()
+        {
+            _combatPanel.OnCloseButtonClicked();
         }
 
         void OnCommitButtonClicked()

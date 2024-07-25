@@ -58,6 +58,11 @@ namespace GameBoard.UI
                 {
                     foreach (var ghost in heldMovementGhosts)
                     {
+                        if (ghost.Tile == MapRenderer.MapCadresByID[ghost.BaseCadre].Tile)
+                        {
+                            ghost.DestroyMapObject();
+                            continue;
+                        }
                         pendingMovementGhosts.Add(ghost);
                         MovementActionData move = new MovementActionData(ghost.BaseCadre, HoveredOverTile.ID);
                         ghost.MovementAction = move;

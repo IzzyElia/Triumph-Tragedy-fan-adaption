@@ -106,7 +106,7 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 return !PlayerCommitted[iPlayer];
             }
-            else if (GamePhase == GamePhase.Combat)
+            else if (GamePhase == GamePhase.Combat && ActiveCombat != null)
             {
                 return ActiveCombat.iPhasingPlayer == iPlayer;
             }
@@ -175,12 +175,33 @@ namespace Game_Logic.TriumphAndTragedy
             NetworkMember.NetworkingLog("Pushing TTGameState global update");
         }
 
+        private List<int> prevUnitsInvolvedInCombat = new List<int>();
         public void PushCombatState()
         {
+            HashSet<int> unitsToPush = new HashSet<int>();
+            foreach (var iCadre in prevUnitsInvolvedInCombat)
+            {
+                unitsToPush.Add(iCadre);
+            }
+            prevUnitsInvolvedInCombat.Clear();
+            if (ActiveCombat is not null)
+            {
+                foreach (var ICadre in ActiveCombat.CalculateInvolvedCadreInterfaces())
+                {
+                    prevUnitsInvolvedInCombat.Add(ICadre.ID);
+                    unitsToPush.Add(ICadre.ID);
+                }
+            }
+
+            foreach (var iCadre in unitsToPush)
+            {
+                GetEntity<GameCadre>(iCadre).PushFullState();
+            }
             foreach (int iPlayer in Players)
             {
                 PushCombatState(iPlayer);
             }
+            
         }
 
         public void PushCombatState(int iPlayer)
@@ -420,7 +441,7 @@ namespace Game_Logic.TriumphAndTragedy
         /// <summary>
         /// Make sure to call PushGlobalFields()
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns true if advancing the turn marker turned past the last player in the turn order (usually meaning it's time for a new phase, but could also happen when ex looping back to the first player during cardplay)</returns>
         public bool AdvanceTurnMarker()
         {
             PositionInTurnOrder++;
@@ -899,6 +920,36 @@ namespace Game_Logic.TriumphAndTragedy
 
             this.GamePhase = gamePhase;
             PushGlobalFields();
+        }
+
+        public void AdvanceCommandingPhasingPlayer()
+        {
+            bool done = false;
+            int failsafe = 10000;
+            while (done == false)
+            {
+                failsafe--;
+                if (failsafe < 0)
+                {
+                    throw new InvalidOperationException("Infinite loop attempting to advance turn marker");
+                    break;
+                }
+                bool allPlayersHaveGone = AdvanceTurnMarker();
+                if (allPlayersHaveGone)
+                {
+                    StartNewYear();
+                    done = true;
+                }
+                else
+                {
+                    if (GetEntity<GameFaction>(ActivePlayer).CommandsAvailable > 0)
+                    {
+                        GamePhase = GamePhase.GiveCommands;
+                        PushGlobalFields();
+                        done = true;
+                    }
+                }
+            }
         }
     }
 }

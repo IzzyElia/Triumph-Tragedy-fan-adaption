@@ -133,7 +133,7 @@ MonoBehaviour:
   - {fileID: 1848976578095409511}
   metersPerSecond: 3
   RotateToMatchMovementVector: 0
-  shotPattern: 0
-  minShotsPerUnit: 1
-  MaxShotsPerUnit: 2
-  burstSeperation: 0.15
+  shotPattern: 2
+  minShotsPerUnit: 4
+  MaxShotsPerUnit: 9
+  burstSeperation: 0.4

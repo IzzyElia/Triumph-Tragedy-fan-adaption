@@ -14,11 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   style: 0
   BaseEffects:
+  - MinNumber: 2
+    MaxNumber: 3
+    unitPrefabs:
+    - {fileID: 5543479812009275168, guid: ccc9ca9b90cc6499ba74f9816aa36375, type: 3}
+  PerUnitEffects:
   - MinNumber: 1
     MaxNumber: 1
     unitPrefabs:
     - {fileID: 5543479812009275168, guid: ccc9ca9b90cc6499ba74f9816aa36375, type: 3}
-  PerUnitEffects: []
   SpawnBoxPosition: {x: -800, y: 25, z: 0}
   SpawnBoxSize: {x: 200, y: 50, z: 0}
   DestinationBoxPosition: {x: 1200, y: 0, z: 0}

@@ -24,6 +24,7 @@ namespace Game_Logic.TriumphAndTragedy
             GameState.PushGlobalFields();
             
             CombatOption combatOption = _selectedCombatOption.Value;
+            GameState.CommittedCombats.Remove(combatOption);
             GameCombat combat = GameCombat.CreateCombat(GameState, iTile:combatOption.iTile, combatOption.iAttacker, combatOption.iDefender);
             combat.StartCombat();
         }

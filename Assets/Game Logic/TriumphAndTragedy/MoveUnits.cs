@@ -32,8 +32,16 @@ namespace Game_Logic.TriumphAndTragedy
                 cadre.PushMove(new int[] {movementAction.iDestination});
             }
 
+            
             GameState.GamePhase = GamePhase.CommitCombats;
-            GameState.PushGlobalFields();
+            if (GameState.GetCombatOptions().Length == 0)
+            {
+                GameState.AdvanceCommandingPhasingPlayer();
+            }
+            else
+            {
+                GameState.PushGlobalFields();
+            }
         }
 
         public (bool, string) AreMovesValid(List<MovementActionData> movesToTest)

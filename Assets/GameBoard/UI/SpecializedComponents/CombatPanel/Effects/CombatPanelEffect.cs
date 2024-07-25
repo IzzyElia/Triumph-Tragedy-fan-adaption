@@ -82,6 +82,7 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                     EffectDefinition.SpawnBoxPosition.y + (Random.value - 0.5f) * EffectDefinition.SpawnBoxSize.y * 2f,
                     EffectDefinition.SpawnBoxPosition.z + (Random.value - 0.5f) * EffectDefinition.SpawnBoxSize.z * 2f
                 );
+                effectUnit.HasHit = isHit;
                 effectUnit.OnCreate(this, AnimationData, timeData);
             }
         }

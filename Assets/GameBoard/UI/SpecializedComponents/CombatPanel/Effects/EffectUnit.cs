@@ -18,8 +18,10 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
         public float burstSeperation;
         [NonSerialized] public Vector3 StartPosition;
         [NonSerialized] public Vector3 EndPosition;
+        [NonSerialized] public bool HasHit;
         private float _metersToTravel;
         private float[] shotTimes;
+        private int hitShot = -1;
 
 
         public override void OnCreate(CombatPanelEffect combatPanelEffect, CombatAnimationData animationData, AnimationTimeData timeData)
@@ -32,6 +34,8 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                 transform.localRotation = Quaternion.Euler(0, 0, 
                     Mathf.Atan2(EndPosition.y - StartPosition.y, EndPosition.x - StartPosition.x) * Mathf.Rad2Deg);
             }
+
+            if (HasHit) hitShot = Random.Range(0, shotsToFire);
             switch (shotPattern)
             {
                 case ShotPattern.Random:
@@ -78,25 +82,29 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                     {
                         for (int j = 0; j < guns.Length; j++)
                         {
-                            FireShot(guns[j], timeData, playSound:j == 0);
+                            FireShot(guns[j], timeData, playSound:j == 0, hitShot == i);
                         }
                     }
                     else
                     {
-                        FireShot(guns[Random.Range(0, guns.Length)], timeData, playSound: true);
+                        FireShot(guns[Random.Range(0, guns.Length)], timeData, playSound: true, hitShot == i);
                     }
                     shotTimes[i] = -1;
                 }
             }
         }
 
-        void FireShot(GameObject gun, AnimationTimeData timeData, bool playSound)
+        void FireShot(GameObject gun, AnimationTimeData timeData, bool playSound, bool isHit)
         {
             EffectProjectile newProjectile = Instantiate(projectile).GetComponent<EffectProjectile>();
             newProjectile.StartPosition = gun.transform.position;
-            newProjectile.EndPosition = CombatPanelEffect.Stage.effectNearCamera.transform.position + new Vector3(
+            if (isHit) newProjectile.EndPosition = CombatPanelEffect.Stage.effectNearCamera.transform.position + new Vector3(
                 x: (Random.value - 0.5f) * CombatPanelEffect.Stage.effectNearCamera.orthographicSize * 2,
                 y: (Random.value - 0.5f) * CombatPanelEffect.Stage.effectNearCamera.orthographicSize * 2,
+                z: 0);
+            else newProjectile.EndPosition = CombatPanelEffect.Stage.effectNearCamera.transform.position + new Vector3(
+                x: (Random.value - 0.5f) * CombatPanelEffect.Stage.effectNearCamera.orthographicSize * 25,
+                y: (Random.value - 0.5f) * CombatPanelEffect.Stage.effectNearCamera.orthographicSize * 25,
                 z: 0);
             newProjectile.PlaySound = playSound;
             newProjectile.gun = gun;

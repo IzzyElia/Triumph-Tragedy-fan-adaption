@@ -19,6 +19,9 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
 
             CombatPanelUnitGroup unitGroup = Instantiate(_cachedPrefab, parent.transform).GetComponent<CombatPanelUnitGroup>();
+            unitGroup.backgroundAspectRatioFitter = unitGroup.background.GetComponent<AspectRatioFitter>();
+            unitGroup._baseColor = unitGroup.background.color;
+            unitGroup._overlayBaseColor = unitGroup.overlay.color;
             if (unitGroup is null) throw new InvalidOperationException("Unit group prefab is missing the unit group component");
             uiController.RegisterUIComponent(unitGroup);
             unitGroup._gameState = gameState;
@@ -41,13 +44,6 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private Color _overlayBaseColor;
         private AspectRatioFitter backgroundAspectRatioFitter;
         [SerializeField] public GridLayoutGroup gridLayout;
-
-        private void Awake()
-        {
-            backgroundAspectRatioFitter = background.GetComponent<AspectRatioFitter>();
-            _baseColor = background.color;
-            _overlayBaseColor = overlay.color;
-        }
 
         public void Refresh(ITTGameState gameState, UnitType unitType, IList<IGameCadre> cadres, MapFaction faction)
         {

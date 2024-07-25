@@ -7,7 +7,6 @@ using Izzy;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
-using Random = UnityEngine.Random;
 
 namespace GameBoard.UI.SpecializeComponents.CombatPanel
 {
@@ -64,8 +63,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         public IGameCombat ActiveCombat = null;
         [NonSerialized] public EffectsStageManager CombatEffectStage;
         public static HashSet<uint> resolvedCombatRolls = new HashSet<uint>(); 
-        // ^ NOTE THAT THIS IS STATIC ^ - Combat animations only play once per machine, rather than per player,
-        // this is to avoid repeating animations in hotseat which get annoying
+        // ^ NOTE THAT THIS IS STATIC ^ - This is so that combat animations only play once per machine, rather than per player,
 
         protected override void Awake()
         {
@@ -87,9 +85,9 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             RegisterAnimationParticipant(decisionManager);
         }
 
+        public static bool ShowingFinalResult = false;
         public void FullRefresh()
         {
-            ActiveCombat = GameState.GetActiveCombat();
             if (ActiveCombat == null) return;
             
             resolvedCombatRolls.Clear();
@@ -114,6 +112,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                 {
                     Debug.LogError("Unrevealed units in combat. This shouldn't happen.");
                     unitType = UnitType.Unknown;
+                    continue;
                 }
                 if (cadre.IFaction.ID == ActiveCombat.iAttackerFaction)
                 {
@@ -134,6 +133,10 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             attackerPanel.FullRefresh(this, UIController.GameState, unitTypesInCombat, attackers, attackerFaction, CombatSide.Attacker);
             defenderPanel.FullRefresh(this, UIController.GameState, unitTypesInCombat, defenders, defenderFaction, CombatSide.Defender);
             decisionManager.FullRefresh(this);
+            
+            attackerPanel.OnCombatStateUpdated();
+            defenderPanel.OnCombatStateUpdated();
+            decisionManager.OnCombatStateUpdated();
         }
 
         public void OnCombatStateUpdated()
@@ -170,11 +173,24 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         }
 
         private int _lastResolvedCombatRollCount = 0;
-        public bool RefreshAllowed = true;
+
+        public void OnCloseButtonClicked()
+        {
+            ShowingFinalResult = false;
+            ActiveCombat = GameState.GetActiveCombat();
+            _refreshQueueState = RefreshQueueState.FullRefresh;
+        }
         public override void OnGamestateChanged()
         {
             IGameCombat gamestateActiveCombat = GameState.GetActiveCombat();
-            if (gamestateActiveCombat?.CombatUID != ActiveCombat?.CombatUID && ActiveCombat == null) _refreshQueueState = RefreshQueueState.FullRefresh;
+            if (gamestateActiveCombat?.CombatUID != ActiveCombat?.CombatUID)
+            {
+                if (ActiveCombat == null)
+                {
+                    ActiveCombat = gamestateActiveCombat;
+                    _refreshQueueState = RefreshQueueState.FullRefresh;
+                }
+            }
             else if (ActiveCombat != null) _refreshQueueState = RefreshQueueState.CombatStateUpdated;
             
             if (ActiveCombat is not null && ActiveCombat.CombatRolls.Count > _lastResolvedCombatRollCount)
@@ -234,7 +250,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             _refreshQueueState = RefreshQueueState.FullRefresh;
         }
 
-        public override bool WantsToBeActive => GameState.IsCombatHappening;
+        public override bool WantsToBeActive => ShowingFinalResult || ActiveCombat != null;
         protected override void OnActive()
         {
             PanelRenderer.SetActive(true);
@@ -330,7 +346,6 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             {
                 AnimationTime += deltaTime;
             }
-            Debug.Log($"Animation time:{AnimationTime}");
         }
 
         public void QueueAnimation(CombatAnimationData animationData)
