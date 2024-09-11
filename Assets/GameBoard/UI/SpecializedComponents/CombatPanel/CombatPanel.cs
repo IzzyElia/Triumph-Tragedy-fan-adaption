@@ -62,12 +62,33 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private Color _backgroundBaseColor;
         public IGameCombat ActiveCombat = null;
         [NonSerialized] public EffectsStageManager CombatEffectStage;
+        public static int ResolvedCombatRollsClearedForCombat = -1;
         public static HashSet<uint> resolvedCombatRolls = new HashSet<uint>(); 
         // ^ NOTE THAT THIS IS STATIC ^ - This is so that combat animations only play once per machine, rather than per player,
+        private Dictionary<int, ICombatPanelUnit> _combatPanelUnits = new Dictionary<int, ICombatPanelUnit>();
+
+        public void RegisterCombatPanelUnit(int iCadre, ICombatPanelUnit combatPanelUnit)
+        {
+            if (!_combatPanelUnits.TryAdd(iCadre, combatPanelUnit)) _combatPanelUnits[iCadre] = combatPanelUnit;
+        }
+        public void DeregisterCombatPanelUnit(int iCadre)
+        {
+            _combatPanelUnits.Remove(iCadre);
+        }
+
+        void RefreshUnitPips()
+        {
+            foreach ((int iCadre, ICombatPanelUnit combatPanelUnit) in _combatPanelUnits)
+            {
+                IGameCadre gameCadre = GameState.GetCadre(iCadre);
+                combatPanelUnit.SetPips(gameCadre.Pips);
+            }
+        }
 
         protected override void Awake()
         {
             base.Awake();
+            UseDefaultWindowAppearanceAnimations = false;
             _backgroundBaseColor = background.color;
         }
 
@@ -90,19 +111,17 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         {
             if (ActiveCombat == null) return;
             
-            resolvedCombatRolls.Clear();
-            
             IGameCadre[] cadres = ActiveCombat.CalculateInvolvedCadreInterfaces();
-            HashsetDictionary<UnitType, IGameCadre> attackers = new HashsetDictionary<UnitType, IGameCadre>();
-            HashsetDictionary<UnitType, IGameCadre> defenders = new HashsetDictionary<UnitType, IGameCadre>();
+            Dictionary<UnitType, List<IGameCadre>> attackers = new Dictionary<UnitType, List<IGameCadre>>();
+            Dictionary<UnitType, List<IGameCadre>> defenders = new Dictionary<UnitType, List<IGameCadre>>();
             HashSet<UnitType> unitTypesInCombat = new HashSet<UnitType>();
             MapFaction attackerFaction = MapRenderer.MapFactionsByID[ActiveCombat.iAttackerFaction];
-            MapFaction defenderFaction = MapRenderer.MapFactionsByID[ActiveCombat.iDefenderFaction];
+            MapFaction defenderFaction = ActiveCombat.iDefenderFaction == -1 ? null : MapRenderer.MapFactionsByID[ActiveCombat.iDefenderFaction];
 
             foreach (var unitType in GameState.Ruleset.unitTypes)
             {
-                attackers.EnsureKey(unitType);
-                defenders.EnsureKey(unitType);
+                attackers.Add(unitType, new List<IGameCadre>());
+                defenders.Add(unitType, new List<IGameCadre>());
             }
 
             foreach (var cadre in cadres)
@@ -114,13 +133,13 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                     unitType = UnitType.Unknown;
                     continue;
                 }
-                if (cadre.IFaction.ID == ActiveCombat.iAttackerFaction)
+                if ((cadre.IFaction == null && ActiveCombat.iAttackerFaction == -1) || (cadre.IFaction != null && cadre.IFaction.ID == ActiveCombat.iAttackerFaction))
                 {
-                    attackers.Add_CertainOfKey(cadre.UnitType, cadre);
+                    attackers[cadre.UnitType].Add(cadre);
                 }
-                else if (cadre.IFaction.ID == ActiveCombat.iDefenderFaction)
+                else if ((cadre.IFaction == null && ActiveCombat.iDefenderFaction == -1) || (cadre.IFaction != null && cadre.IFaction.ID == ActiveCombat.iDefenderFaction))
                 {
-                    defenders.Add_CertainOfKey(cadre.UnitType, cadre);
+                    defenders[cadre.UnitType].Add(cadre);
                 }
                 else
                 {
@@ -141,9 +160,17 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
 
         public void OnCombatStateUpdated()
         {
+            if (ActiveCombat is null) return;
+            
             attackerPanel.OnCombatStateUpdated();
             defenderPanel.OnCombatStateUpdated();
             decisionManager.OnCombatStateUpdated();
+
+            foreach ((int iCadre, ICombatPanelUnit combatPanelUnit) in _combatPanelUnits)
+            {
+                IGameCadre gameCadre = GameState.GetCadre(iCadre);
+                combatPanelUnit.SetPips(gameCadre.Pips);
+            }
         }
 
         public override void UIUpdate()
@@ -172,22 +199,29 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
         }
 
-        private int _lastResolvedCombatRollCount = 0;
+        private static int _lastResolvedCombatRollCount = 0;
 
         public void OnCloseButtonClicked()
         {
             ShowingFinalResult = false;
             ActiveCombat = GameState.GetActiveCombat();
             _refreshQueueState = RefreshQueueState.FullRefresh;
+            UIController.UnresolvedStateChange = true;
         }
         public override void OnGamestateChanged()
         {
             IGameCombat gamestateActiveCombat = GameState.GetActiveCombat();
             if (gamestateActiveCombat?.CombatUID != ActiveCombat?.CombatUID)
             {
-                if (ActiveCombat == null)
+                if (!ShowingFinalResult)
                 {
                     ActiveCombat = gamestateActiveCombat;
+                    if (ActiveCombat != null && ResolvedCombatRollsClearedForCombat != ActiveCombat?.CombatUID)
+                    {
+                        ResolvedCombatRollsClearedForCombat = ActiveCombat.CombatUID;
+                        resolvedCombatRolls.Clear();
+                        _lastResolvedCombatRollCount = 0;
+                    }
                     _refreshQueueState = RefreshQueueState.FullRefresh;
                 }
             }
@@ -202,9 +236,11 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                 {
                     MapCadre shooter = MapRenderer.GetCadreByID(unresolvedRoll.iShooter);
                     MapCadre target = MapRenderer.GetCadreByID(unresolvedRoll.iTarget);
+                    if (target is null) continue;
+                    int iShooterFaction = shooter.MapCountry.Faction is null ? -1 : shooter.MapCountry.Faction.ID;
                     CombatAnimationResolveInfo shooterResolveGroup = new CombatAnimationResolveInfo()
                     {
-                        Side = shooter.MapCountry.faction.ID == ActiveCombat.iAttackerFaction
+                        Side = iShooterFaction == ActiveCombat.iAttackerFaction
                             ? CombatSide.Attacker
                             : CombatSide.Defender,
                         UnitType = shooter.UnitType,
@@ -249,13 +285,13 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             ActiveCombat = GameState.GetActiveCombat();
             _refreshQueueState = RefreshQueueState.FullRefresh;
         }
-
+        
         public override bool WantsToBeActive => ShowingFinalResult || ActiveCombat != null;
         protected override void OnActive()
         {
             PanelRenderer.SetActive(true);
             background.enabled = true;
-            FullRefresh();
+            _refreshQueueState = RefreshQueueState.FullRefresh;
         }
 
         protected override void OnHidden()
@@ -279,31 +315,36 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         
         
         // Combat animation system
-        public float _darkenTime = 0.5f;
-        public float TotalAnimationTime = 7f;
-        [NonSerialized] public float AnimationTime = 0;
-        public float AnimationProgress => TotalAnimationTime > 0 ? AnimationTime / TotalAnimationTime : 1;
-        public bool AnimationOngoing => _animationData.Count > 0;
-        private Queue<CombatAnimationData> _animationData = new ();
-        private List<ICombatPanelAnimationParticipant> _animationParticipants = new ();
-        private CombatPanelEffect _activeEffect;
-        private bool _firstFrame = true;
+        public static float _darkenTime = 0.5f;
+        public static float TotalAnimationTime => _activeEffect.TotalAnimationTime;
+        [NonSerialized] public static float AnimationTime = 0;
+        public static bool AnimationOngoing => _animationData.Count > 0;
+        private static Queue<CombatAnimationData> _animationData = new ();
+        private static List<ICombatPanelAnimationParticipant> _animationParticipants = new ();
+        private static CombatPanelEffect _activeEffect;
+        private static bool _firstFrame = true;
         void AdvanceAnimation(float deltaTime)
         {
             CombatAnimationData currentAnimationData = _animationData.Peek();
-            float halfAnimationTime = TotalAnimationTime / 2f;
+            
             AnimationState animationState;
             if (_firstFrame)
             {
                 animationState = AnimationState.FirstFrame;
             }
-            else if (AnimationTime >= TotalAnimationTime)
+            else if (_activeEffect is not null && AnimationTime >= TotalAnimationTime)
             {
                 animationState = AnimationState.LastFrame;
             }
             else
             {
                 animationState = AnimationState.Ongoing;
+            }
+            
+            if (_firstFrame)
+            {
+                InitializeAnimation(currentAnimationData);
+                _firstFrame = false;
             }
             
             AnimationTimeData timeData = new AnimationTimeData()
@@ -316,12 +357,6 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                     1),
                 AnimationState = animationState
             };
-
-            if (_firstFrame)
-            {
-                InitializeAnimation(currentAnimationData, timeData);
-                _firstFrame = false;
-            }
             
             this.CombatAnimation(currentAnimationData, timeData);
             foreach (var animationParticipant in _animationParticipants)
@@ -365,16 +400,6 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
 
         
         // Combat panel animation
-        private MuzzleFlashData[] muzzleFlashes =
-            new MuzzleFlashData[0];
-
-        private HashSet<int> instantiatedMuzzleFlashes = new HashSet<int>();
-        private struct MuzzleFlashData
-        {
-            public Vector3 position;
-            public float size;
-            public float startTime;
-        }
         public void CombatAnimation(CombatAnimationData animationData, AnimationTimeData timeData)
         {
             switch (timeData.AnimationState)
@@ -387,7 +412,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             background.color = new Color(_backgroundBaseColor.r * timeData.DarkenProgress, _backgroundBaseColor.g * timeData.DarkenProgress, _backgroundBaseColor.b * timeData.DarkenProgress, _backgroundBaseColor.a);
         }
 
-        void InitializeAnimation(CombatAnimationData animationData, AnimationTimeData timeData)
+        void InitializeAnimation(CombatAnimationData animationData)
         {
             if (_activeEffect is not null)
             {
@@ -396,15 +421,15 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
             
             MapFaction faction = animationData.firingSide == CombatSide.Attacker
-                ? MapRenderer.MapFactionsByID[ActiveCombat.iAttackerFaction]
-                : MapRenderer.MapFactionsByID[ActiveCombat.iDefenderFaction];
+                ? ActiveCombat.iAttackerFaction == -1 ? null : MapRenderer.MapFactionsByID[ActiveCombat.iAttackerFaction]
+                : ActiveCombat.iDefenderFaction == -1 ? null : MapRenderer.MapFactionsByID[ActiveCombat.iDefenderFaction];
             
             EffectDefinition effectDefinition =
-                animationData.firingUnitType.GetCombatEffectDefinition(faction.leader.name);
+                animationData.firingUnitType.GetCombatEffectDefinition(faction is null ? null : faction.leader.name);
             
             if (effectDefinition is null) Debug.LogWarning($"No effect definition found for {animationData.firingUnitType.Name} ({faction.leader.name})");
             
-            _activeEffect = CombatPanelEffect.Generate(CombatEffectStage, animationData, effectDefinition);
+            _activeEffect = CombatPanelEffect.Generate(CombatEffectStage, animationData, effectDefinition, _combatPanelUnits);
         }
     }
 }

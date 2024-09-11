@@ -16,6 +16,7 @@ namespace GameBoard.EditorUtilities
             if (GUILayout.Button("Rebuild"))
             {
                 _pipsManager.Rebuild();
+                _pipsManager.Refresh();
             }
         }
 

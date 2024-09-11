@@ -7,4 +7,10 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         AttackerInWar,
         DefenderInWar,
     }
+
+    public enum NeutralCountryDiplomaticStatus
+    {
+        Peace,
+        War
+    }
 }

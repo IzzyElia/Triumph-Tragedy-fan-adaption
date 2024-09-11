@@ -12,5 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e677074d9f349559240628e14ea0e16, type: 3}
   m_Name: Fortress
   m_EditorClassIdentifier: 
-  effectPrefabs: []
   style: 1
+  BaseEffects:
+  - MinNumber: 1
+    MaxNumber: 1
+    unitPrefabs:
+    - {fileID: 5543479812009275168, guid: e5639f217c7f645089e252696d92a3e1, type: 3}
+  PerUnitEffects:
+  - MinNumber: 1
+    MaxNumber: 1
+    unitPrefabs:
+    - {fileID: 5543479812009275168, guid: e5639f217c7f645089e252696d92a3e1, type: 3}
+  SpawnBoxPosition: {x: -25, y: 0, z: 0}
+  SpawnBoxSize: {x: 50, y: 5, z: 0}
+  DestinationBoxPosition: {x: 0, y: 0, z: 0}
+  DestinationBoxSize: {x: 0, y: 0, z: 0}
+  NearCameraPosition: {x: 100, y: 0, z: 0}

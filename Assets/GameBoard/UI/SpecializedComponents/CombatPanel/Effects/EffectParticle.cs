@@ -1,7 +1,5 @@
 using System;
-using FMODUnity;
 using GameBoard.UI.SpecializeComponents.CombatPanel;
-using UnityEditor;
 using UnityEngine;
 
 namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
@@ -10,14 +8,12 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
     {
         [SerializeField] private float lifetime;
         [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private EventReference sound;
 
         [NonSerialized] public bool PlaySound = true;
 
         public override void OnCreate(CombatPanelEffect combatPanelEffect, CombatAnimationData animationData, AnimationTimeData timeData)
         {
             base.OnCreate(combatPanelEffect, animationData, timeData);
-            if (PlaySound && Application.isPlaying) FMODUnity.RuntimeManager.PlayOneShot(sound, transform.position);
         }
 
         public override void UpdateAnimationState(AnimationTimeData timeData)

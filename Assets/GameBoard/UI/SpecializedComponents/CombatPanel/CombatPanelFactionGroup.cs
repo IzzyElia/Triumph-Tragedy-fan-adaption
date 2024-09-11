@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy;
-using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents.CombatPanel
 {
@@ -11,7 +9,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
     {
         private List<CombatPanelUnitGroup> _unitGroups = new List<CombatPanelUnitGroup>();
         
-        public void FullRefresh(CombatPanel combatPanel, ITTGameState gameState, HashSet<UnitType> unitTypes, HashsetDictionary<UnitType, IGameCadre> cadres, MapFaction faction, CombatSide side)
+        public void FullRefresh(CombatPanel combatPanel, ITTGameState gameState, HashSet<UnitType> unitTypes, Dictionary<UnitType, List<IGameCadre>> cadres, MapFaction faction, CombatSide side)
         {
             int iUnitGroup = 0;
             for (int i = 0; i < gameState.Ruleset.unitTypes.Length; i++)
@@ -23,11 +21,11 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                     if (iUnitGroup < _unitGroups.Count)
                     {
                         unitGroup = _unitGroups[iUnitGroup];
-                        unitGroup.Refresh(gameState, unitType, cadres.Get_CertainOfKey(unitType), faction);
+                        unitGroup.Refresh(gameState, unitType, cadres[unitType], faction);
                     }
                     else
                     {
-                        unitGroup = CombatPanelUnitGroup.Create(UIController, combatPanel, gameState, this, unitType, cadres.Get_CertainOfKey(unitType), faction, side);
+                        unitGroup = CombatPanelUnitGroup.Create(UIController, combatPanel, gameState, this, unitType, cadres[unitType], faction, side);
                         _unitGroups.Add(unitGroup);
                     }
                     

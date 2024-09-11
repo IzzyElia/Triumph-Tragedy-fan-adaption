@@ -110,6 +110,19 @@ namespace GameBoard.UI.SpecializeComponents
         
         void CommitCommands()
         {
+            UIController.MovementAction.Reset();
+            foreach (var iFaction in UIController.DiploPanel.consideringFactionWars)
+            {
+                UIController.MovementAction.AddParameter(new MovementActionData(isDiploAction:true, iCadreOriFactionWarTarget:iFaction, iDestinationOriCountryWarTarget:-1));
+            }
+            foreach (var iCountry in UIController.DiploPanel.consideringNeutralWars)
+            {
+                UIController.MovementAction.AddParameter(new MovementActionData(isDiploAction:true, iCadreOriFactionWarTarget:-1, iDestinationOriCountryWarTarget:iCountry));
+            }
+            foreach (var pendingMovementGhost in UIController.pendingMovementGhosts)
+            {
+                UIController.MovementAction.AddParameter(pendingMovementGhost.MovementAction);
+            }
             UIController.MovementAction.Send(OnCommandsReply);
             
             _button.interactable = false;

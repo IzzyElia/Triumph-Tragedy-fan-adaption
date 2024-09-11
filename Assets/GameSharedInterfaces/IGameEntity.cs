@@ -2,6 +2,8 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
 {
     public interface IGameEntity
     {
+        public bool Active { get; }
+        
         public int ID { get; }
 
         public void PushFullState();

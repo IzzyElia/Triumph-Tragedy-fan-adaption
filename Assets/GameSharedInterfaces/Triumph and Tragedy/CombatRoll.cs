@@ -1,4 +1,5 @@
 using Unity.Collections;
+using Izzy;
 
 namespace GameSharedInterfaces.Triumph_and_Tragedy
 {
@@ -10,6 +11,17 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         public int iTarget;
         public int iDieRoll;
         public bool IsHit;
+
+        public int HashCode_MurmurHash3
+        {
+            get
+            {
+                int hash = Hashing.MurmurHash3_Combine(iShooter, (int)TargetedCategory, iTarget, iDieRoll);
+                hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(UID));
+                hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(IsHit));
+                return hash;
+            }
+        }
 
         public static CombatRoll Recreate(ref DataStreamReader message)
         {

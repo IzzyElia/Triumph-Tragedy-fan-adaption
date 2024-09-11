@@ -7,17 +7,477 @@
 [LOG] SystemI::init                            : Output requires a sample rate of 44100Hz, resampling will occur.
 [LOG] Thread::initThread                       : Init FMOD stream thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFB, Stack Size: 98304, Semaphore: No, Sleep Time: 10, Looping: Yes.
 [LOG] Thread::initThread                       : Init FMOD mixer thread. Affinity: 0x4000000000000001, Priority: 0xFFFF7FFA, Stack Size: 81920, Semaphore: Yes, Sleep Time: 0, Looping: Yes.
-[LOG] AsyncManager::init                       : manager 0x7fd2acfb5008 isAsync 0 updatePeriod 0.02
+[LOG] AsyncManager::init                       : manager 0x7fef3e922008 isAsync 0 updatePeriod 0.02
 [LOG] AsyncManager::init                       : done
 [LOG] PlaybackSystem::init                     : 
 [LOG] Thread::initThread                       : Init FMOD Studio sample load thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFD, Stack Size: 98304, Semaphore: No, Sleep Time: 1, Looping: No.
 [LOG] PlaybackSystem::init                     : done
 [LOG] Thread::initThread                       : Init FMOD Studio bank load thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFD, Stack Size: 98304, Semaphore: No, Sleep Time: 1, Looping: No.
 [LOG] Manager::init                            : done.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef489ff938
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Explosion_3', format=5, channels=2, frequency=48000, lengthbytes=10976, lengthpcm=39688, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.478760.
+[LOG] SystemI::mixerSuspend                    : Suspending output.
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1905.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1905.bank'
 [LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1906.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1906.bank'
 [LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1907.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1907.bank'
 [LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
-[LOG] PlaybackSystem::acquireMasterBus         : Setting master channel group format to 6
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1908.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1908.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1909.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1909.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1910.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1910.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1911.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1911.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1912.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1912.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1913.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1913.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1914.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1914.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1915.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1915.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1916.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1916.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1917.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1917.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1918.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1918.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1919.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1919.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1920.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1920.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1921.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1921.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1922.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1922.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1923.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1923.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1924.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1924.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1925.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1925.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1926.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1926.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1927.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1927.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1928.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1928.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1929.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1929.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1930.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1930.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1931.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1931.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1932.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1932.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1933.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1933.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1934.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1934.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1935.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1935.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1936.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1936.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1937.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1937.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1938.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1938.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1939.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1939.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1940.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1940.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1941.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1941.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1942.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1942.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1943.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1943.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] Manager::receiveLiveUpdateBank           : Received live update bank path: fmod:///remote//Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1944.bank
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Library/Application Support/FMOD Studio/UnsavedProjects/Hotswap-PAclan/hotswap_1944.bank'
+[LOG] Manager::readBank                        : fileversion = 142, compatVersion = 140 (oldest = 44, newest = 142)
+[LOG] SoundI::release                          :  (0x7fef466b4048)
+[LOG] SoundI::release                          :     Artillery Hit 1 (0x7fef466ed898)
+[LOG] SystemI::createSoundInternal             : Create name='fmod:///remote//Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav', mode=0x0200C202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav'
+[LOG] SystemI::createSoundInternal             : Sample 0/0: name='(null)', format=3, channels=2, frequency=44100, lengthbytes=1301142, lengthpcm=216857, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.000000.
+[LOG] SystemI::mixerResume                     : Resuming output.
+[LOG] SoundI::release                          : Artillery Hit 1.wav (0x7fef466ed898)
+[LOG] SystemI::createSoundInternal             : Create name='fmod:///remote//Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav', mode=0x0200C202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav'
+[LOG] SystemI::createSoundInternal             : Sample 0/0: name='(null)', format=3, channels=2, frequency=44100, lengthbytes=1301142, lengthpcm=216857, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.000000.
+[LOG] SoundI::release                          : Artillery Hit 1.wav (0x7fef325a2518)
+[LOG] SystemI::createSoundInternal             : Create name='fmod:///remote//Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav', mode=0x0200C202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav'
+[LOG] SystemI::createSoundInternal             : Sample 0/0: name='(null)', format=3, channels=2, frequency=44100, lengthbytes=1301142, lengthpcm=216857, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.000000.
+[LOG] SoundI::release                          : Artillery Hit 1.wav (0x7fef489d3568)
+[LOG] SystemI::createSoundInternal             : Create name='fmod:///remote//Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav', mode=0x0200C202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] ProfileRemoteFile::fileOpen              : Attemping to open remote file '/Users/emmaeliasen/Documents/Development/Triumph & Tragedy/FModProject/TT/Assets/Artillery Hits/Artillery Hit 1.wav'
+[LOG] SystemI::createSoundInternal             : Sample 0/0: name='(null)', format=3, channels=2, frequency=44100, lengthbytes=1301142, lengthpcm=216857, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.000000.
+[LOG] SoundI::release                          : Artillery Hit 1.wav (0x7fef324ac478)
+[LOG] SystemI::createSound                     : filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     : FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] AsyncThread::add                         : add sound to async queue : soundi = 0x7fef4815d2e8, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef4815d2e8
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSound                     :     filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     :     FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef54258de0
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] AsyncThread::add                         :     add sound to async queue : soundi = 0x7fef481fc908, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] SystemI::createSound                     :     filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     :     FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] AsyncThread::add                         :     add sound to async queue : soundi = 0x7fef4de25538, queue head = 0x7fef5a9c6838, queue count = 1
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef4815d2e8
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef481fc908
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef327f5e50
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef481fc908
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef4de25538
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef31089840
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef4de25538
+[LOG] AsyncThread::add                         : add sound to async queue : soundi = 0x7fef542dfb68, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef542dfb68
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef542dfb68
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef4aaac588
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Rifle Shot 2', format=5, channels=2, frequency=48000, lengthbytes=8000, lengthpcm=78325, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.566091.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef4aaac588
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Rifle Shot 4', format=5, channels=2, frequency=48000, lengthbytes=8608, lengthpcm=91871, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.913436.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef4aaac588
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Rifle Shot 1', format=5, channels=2, frequency=48000, lengthbytes=8640, lengthpcm=91568, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.964140.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef4aaac588
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Rifle Shot 3', format=5, channels=2, frequency=48000, lengthbytes=6912, lengthpcm=73704, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.567831.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef54307698
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='zapsplat_warfare_bullets_x3_hit_ground_dirt_quick_succession_43622', format=5, channels=2, frequency=48000, lengthbytes=14016, lengthpcm=55296, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.711060.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef54307698
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='zapsplat_warfare_several_bullets_hit_ground_dirt_fast_43624', format=5, channels=2, frequency=48000, lengthbytes=55712, lengthpcm=187776, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.571228.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef54307698
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='zapsplat_warfare_bullet_hit_metal_004_43603', format=5, channels=2, frequency=48000, lengthbytes=11296, lengthpcm=57600, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.714539.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef54307698
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='zapsplat_warfare_bullet_hit_metal_003_43602', format=5, channels=2, frequency=48000, lengthbytes=7328, lengthpcm=32256, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.693298.
+[LOG] SystemI::createSoundInternal             : Create name='', mode=0x02000202
+[LOG] SystemI::createSoundInternal             : exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             : exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             : exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             : exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlist      = 0x70000828393c
+[LOG] SystemI::createSoundInternal             : exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             : exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             : exinfo->useropen           = 0x1dcab8980
+[LOG] SystemI::createSoundInternal             : exinfo->userclose          = 0x1dcab8a3e
+[LOG] SystemI::createSoundInternal             : exinfo->userread           = 0x1dcab8a71
+[LOG] SystemI::createSoundInternal             : exinfo->userseek           = 0x1dcab8b10
+[LOG] SystemI::createSoundInternal             : exinfo->fileuserdata       = 0x7fef54307698
+[LOG] SystemI::createSoundInternal             : exinfo->initialseekpostype = 1
+[LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 5
+[LOG] SystemI::createSoundInternal             : Sample 0/1: name='Tank', format=5, channels=2, frequency=48000, lengthbytes=30304, lengthpcm=165274, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.748718.
+[LOG] SoundI::release                          :  (0x7fef5a9957d8)
+[LOG] SoundI::release                          :     Artillery Hit 4 (0x7fef5a9c15b8)
+[LOG] SoundI::release                          :  (0x7fef466e2eb8)
+[LOG] SoundI::release                          :     Artillery Hit 2 (0x7fef2f927ac8)
+[LOG] SoundI::release                          : Tank Driving (0x7fef4de25538)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef578965a8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef542dfb68)
+[LOG] SoundI::release                          : Tank Driving (0x7fef481fc908)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef489bb8b8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef542b6b98)
+[LOG] SoundI::release                          : Tank Driving (0x7fef4815d2e8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef489ed848)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef542078d8)
+[LOG] SystemI::createSound                     : filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     : FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] AsyncThread::add                         : add sound to async queue : soundi = 0x7fef5a99dda8, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef5a99dda8
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef5a9a8f70
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSound                     :     filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     :     FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] AsyncThread::add                         :     add sound to async queue : soundi = 0x7fef48dff808, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] SystemI::createSound                     :     filename = FModProject/TT/Build/Desktop/Master.bank : mode 02010082
+[LOG] SystemI::createSound                     :     FMOD_NONBLOCKING specified.  Putting into queue to be opened asynchronously!
+[LOG] AsyncThread::add                         :     add sound to async queue : soundi = 0x7fef327f48a8, queue head = 0x7fef5a9c6838, queue count = 1
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef5a99dda8
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef48dff808
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef327f4360
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef48dff808
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef327f48a8
+[LOG] SystemI::createSoundInternal             :     Create name='FModProject/TT/Build/Desktop/Master.bank', mode=0x02010082
+[LOG] SystemI::createSoundInternal             :     exinfo->cbsize             = 224
+[LOG] SystemI::createSoundInternal             :     exinfo->length             = 825696
+[LOG] SystemI::createSoundInternal             :     exinfo->fileoffset         = 25024
+[LOG] SystemI::createSoundInternal             :     exinfo->numsubsounds       = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlist      = 0x7fef2f91e3a0
+[LOG] SystemI::createSoundInternal             :     exinfo->inclusionlistnum   = 1
+[LOG] SystemI::createSoundInternal             :     exinfo->suggestedsoundtype = 5
+[LOG] SystemI::createSoundInternal             :     exinfo->initialseekpostype = 1
+[LOG] SystemI::createSoundInternal             :     Stream 0/1: name='Tank Driving', format=5, channels=2, frequency=48000, lengthbytes=351104, lengthpcm=1230336, pcmblocksize=0, loopstart=0, loopend=0, mode=0x00000000, channelmask=0x00000000, channelorder=0, peakvolume=0.503021.
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef327f48a8
+[LOG] AsyncThread::add                         : add sound to async queue : soundi = 0x7fef42c611a8, queue head = 0x7fef5a9c6838, queue count = 0
+[LOG] AsyncThread::threadFunc                  : Starting Asynchronous operation on sound 0x7fef42c611a8
+[LOG] AsyncThread::threadFunc                  : Finished Asynchronous operation on sound 0x7fef42c611a8
+[LOG] SoundI::release                          : Tank Driving (0x7fef327f48a8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef42cc4128)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef42c52f38)
+[LOG] SoundI::release                          : Tank Driving (0x7fef48dff808)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef42cd57a8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef42c611a8)
+[LOG] SoundI::release                          : Tank Driving (0x7fef5a99dda8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef489823b8)
+[LOG] SoundI::release                          :     Tank Driving (0x7fef4893c2c8)
+[LOG] SoundI::release                          :  (0x7fef5a9b25c8)
+[LOG] SoundI::release                          :     Artillery Hit 5 (0x7fef5a9b2738)
+[LOG] SoundI::release                          :  (0x7fef5a91c4f8)
+[LOG] SoundI::release                          :     Artillery Hit 3 (0x7fef5a99e3a8)
+[LOG] SoundI::release                          :  (0x7fef3149b918)
+[LOG] SoundI::release                          :     Rifle Shot 3 (0x7fef542e6898)
+[LOG] SoundI::release                          :  (0x7fef500ab108)
+[LOG] SoundI::release                          :     Rifle Shot 1 (0x7fef5001f148)
+[LOG] SoundI::release                          :  (0x7fef42c33ea8)
+[LOG] SoundI::release                          :     Rifle Shot 4 (0x7fef5004a788)
+[LOG] SoundI::release                          :  (0x7fef2b715a78)
+[LOG] SoundI::release                          :     Rifle Shot 2 (0x7fef2b765238)
+[LOG] SoundI::release                          :  (0x7fef489dbdf8)
+[LOG] SoundI::release                          :     Explosion_3 (0x7fef48151018)
+[LOG] SoundI::release                          :  (0x7fef314923c8)
+[LOG] SoundI::release                          :     Tank (0x7fef31490f58)
+[LOG] SoundI::release                          :  (0x7fef310b4618)
+[LOG] SoundI::release                          :     zapsplat_warfare_bullet_hit_metal_003_43602 (0x7fef3103ee98)
+[LOG] SoundI::release                          :  (0x7fef3100b5c8)
+[LOG] SoundI::release                          :     zapsplat_warfare_bullet_hit_metal_004_43603 (0x7fef310816f8)
+[LOG] SoundI::release                          :  (0x7fef327dc518)
+[LOG] SoundI::release                          :     zapsplat_warfare_bullets_x3_hit_ground_dirt_quick_succession_43622 (0x7fef32726cb8)
+[LOG] SoundI::release                          :  (0x7fef310567b8)
+[LOG] SoundI::release                          :     zapsplat_warfare_several_bullets_hit_ground_dirt_fast_43624 (0x7fef310456f8)
+[LOG] Thread::callback                         : FMOD Studio update thread finished.
+[LOG] Thread::callback                         : FMOD Studio bank load thread finished.
+[LOG] ProfileClient::markForDead               : Closing client connection
+[LOG] ProfileClient::recvThreadLoopFunction    : Socket disconnected
+[LOG] Thread::callback                         : FMOD profiler thread (recv) finished.
+[LOG] Profile::disconnectAll                   : Profiler disconnecting all clients
+[LOG] Thread::callback                         : FMOD profiler thread (send) finished.
+[LOG] Thread::callback                         : FMOD Studio sample load thread finished.
+[LOG] LiveUpdate::release                      : 
+[LOG] LiveUpdate::reset                        : Reset connection (reason Disconnected)
+[LOG] Thread::callback                         : FMOD stream thread finished.
+[LOG] Thread::callback                         : FMOD mixer thread finished.
+[LOG] Profile::disconnectAll                   : Profiler disconnecting all clients
+[LOG] SystemI::close                           : Closed.
 [LOG] Thread::callback                         : FMOD Studio bank load thread finished.
 [LOG] Thread::callback                         : FMOD Studio sample load thread finished.
 [LOG] LiveUpdate::release                      : 
@@ -25,3 +485,5 @@
 [LOG] Thread::callback                         : FMOD stream thread finished.
 [LOG] Thread::callback                         : FMOD mixer thread finished.
 [LOG] SystemI::close                           : Closed.
+[LOG] Thread::callback                         : FMOD nonblocking thread (0) finished.
+[LOG] Thread::callback                         : FMOD file thread finished.

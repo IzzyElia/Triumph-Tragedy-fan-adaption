@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GameLogic;
 using GameSharedInterfaces;
+using Izzy;
 using Unity.Collections;
-using UnityEngine;
 
 namespace Game_Logic
 {
@@ -99,7 +98,7 @@ namespace Game_Logic
 
         public override int HashFullState(int asPlayer)
         {
-            return HashCode.Combine(HoldingPlayer);
+            return Hashing.MurmurHash3(HoldingPlayer);
         }
 
         protected abstract void WriteCardDetails(ref DataStreamWriter outgoingMessage);

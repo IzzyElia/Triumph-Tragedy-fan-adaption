@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using GameBoard;
 using GameLogic;
+using GameSharedInterfaces;
+using Izzy;
 using Unity.Collections;
 
 namespace Game_Logic.TriumphAndTragedy
@@ -39,7 +41,7 @@ namespace Game_Logic.TriumphAndTragedy
             }
         }
 
-        public GameFaction Faction
+        public GameFaction AssociatedFaction
         {
             get
             {
@@ -47,17 +49,17 @@ namespace Game_Logic.TriumphAndTragedy
                 {
                     return null;
                 }
-                else return Country.Faction;
+                else return Country.AssociatedFaction;
             }
         }
 
-        private int iOccupier = -1; // If made public then be sure to update the value it as country control changes
-        public GameFaction Occupier
+        private int iOccupier = -1; // If made public then be sure to update the value as country control changes
+        public GameCountry Occupier
         {
             get
             {
-                if (iOccupier >= 0) return ((TTGameState)GameState).GetEntity<GameFaction>(iOccupier);
-                else if (Faction != null) return Faction;
+                if (iOccupier >= 0) return ((TTGameState)GameState).GetEntity<GameCountry>(iOccupier);
+                else if (Country != null) return Country;
                 else return null;
             }
             set
@@ -74,15 +76,60 @@ namespace Game_Logic.TriumphAndTragedy
 
         public int[] ConnectedTileBorderIDs;
 
-        public int[] ConnectedTileIDs;
+        public int[] ConnectedTileIDs = Array.Empty<int>();
         public GameTile[] ConnectedTiles; // Derived Value
         public GameBorder[] ConnectedBorders; // Derived Value
         public int Resources;
         public int ColonialResources;
-        public int Population { get; private set; } // Derived Value
-        public int Muster { get; private set; } // Derived Value
+
+        public int Population
+        {
+            get
+            {
+                switch (CitySize)
+                {
+                    case 0: // No settlement
+                        return 0;
+                    case 1: // Town
+                        return 0;
+                    case 2: // City
+                        return 1;
+                    case 3: // Minor Capital
+                        return 1;
+                    case 4: // Sub-capital
+                        return 2;
+                    case 5: // Main-capital
+                        return 3;
+                    default: throw new NotImplementedException();
+                }
+            }
+        }
+
+        public int Muster
+        {
+            get
+            {
+                switch (CitySize)
+                {
+                    case 0: // No settlement
+                        return 0; 
+                    case 1: // Town
+                        return 1;
+                    case 2: // City
+                        return 2;
+                    case 3: // Minor Capital
+                        return 3;
+                    case 4: // Sub-capital
+                        return 3;
+                    case 5: // Main-capital
+                        return 4;
+                    default: throw new NotImplementedException();
+                }
+            }
+        }
         public bool IsCoastal { get; private set; } // Derived Value
         public int CitySize;
+        public int iStartingFaction;
 
         
         public IReadOnlyCollection<GameCadre> GetCadresOnTile()
@@ -92,7 +139,7 @@ namespace Game_Logic.TriumphAndTragedy
         
         public override void RecalculateDerivedValues()
         {
-            // Connected tiles?
+            // Connected tiles
             ConnectedTiles = new GameTile[ConnectedTileIDs.Length];
             ConnectedBorders = new GameBorder[ConnectedTileBorderIDs.Length];
             for (int i = 0; i < ConnectedTileIDs.Length; i++)
@@ -101,7 +148,7 @@ namespace Game_Logic.TriumphAndTragedy
                 ConnectedBorders[i] = GameState.GetEntity<GameBorder>(ConnectedTileBorderIDs[i]);
             }
             
-            // Coastal?
+            // Coastal
             IsCoastal = false;
             if (TerrainType == TerrainType.Land || TerrainType == TerrainType.NotInPlay)
             {
@@ -118,51 +165,6 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 IsCoastal = true;
             }
-            
-            // Population and muster?
-            int populationOfCitySize;
-            int musterOfCitySize;
-            switch (CitySize)
-            {
-                case 0: // No settlement
-                    populationOfCitySize = 0; 
-                    musterOfCitySize = 0; 
-                    break; 
-                case 1: // Town
-                    populationOfCitySize = 0;
-                    musterOfCitySize = 1;
-                    break; 
-                case 2: // City
-                    populationOfCitySize = 1;
-                    musterOfCitySize = 2;
-                    break; 
-                case 3: // Minor Capital
-                    populationOfCitySize = 1;
-                    musterOfCitySize = 3;
-                    break; 
-                case 4: // Sub-capital
-                    populationOfCitySize = 2;
-                    musterOfCitySize = 3;
-                    break; 
-                case 5: // Main-capital
-                    populationOfCitySize = 3;
-                    musterOfCitySize = 4;
-                    break; 
-                default: throw new NotImplementedException();
-            }
-
-            Muster = musterOfCitySize;
-
-            // If the calculated population changed recalculate the faction as well, since total production may have changed
-            if (Population != populationOfCitySize)
-            {
-                Population = populationOfCitySize;
-                Faction?.RecalculateDerivedValues();
-            }
-            else
-            {
-                Population = populationOfCitySize;
-            }
         }
 
         protected override void ReceiveCustomUpdate(ref DataStreamReader incomingMessage, byte header)
@@ -173,7 +175,9 @@ namespace Game_Logic.TriumphAndTragedy
         protected override void ReceiveFullState(ref DataStreamReader incomingMessage)
         {
             iCountry = incomingMessage.ReadInt();
+            int prevOccupier = iOccupier;
             iOccupier = incomingMessage.ReadInt();
+            iStartingFaction = incomingMessage.ReadInt();
             TerrainType = (TerrainType)incomingMessage.ReadByte();
             CitySize = incomingMessage.ReadByte();
             Resources = incomingMessage.ReadByte();
@@ -191,12 +195,36 @@ namespace Game_Logic.TriumphAndTragedy
             {
                 ConnectedTileBorderIDs[i] = incomingMessage.ReadShort();
             }
+
+            if (prevOccupier != iOccupier)
+            {
+                GameState.FlagForRecalculation(this);
+                foreach (var gameFaction in GameState.GetEntitiesOfType<GameFaction>())
+                {
+                    GameState.FlagForRecalculation(gameFaction);
+                }
+            }
+
+            if (GameState.NetworkMember.GameStarted) RefreshMapState();
+
+        }
+
+        public override void RefreshMapState()
+        {
+            MapTile.mapCountry = iCountry == -1 ? null : MapRenderer.MapCountriesByID[iCountry];
+            MapTile.Occupier = Occupier == null || Occupier == Country ? null : MapRenderer.MapCountriesByID[Occupier.ID];
+            MapTile.terrainType = TerrainType;
+            MapTile.citySize = CitySize;
+            MapTile.resources = Resources;
+            MapTile.colonialResources = ColonialResources;
+            MapTile.RecalculateMaterialDuringRuntime();
         }
 
         protected override void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage)
         {
             outgoingMessage.WriteInt(iCountry);
             outgoingMessage.WriteInt(iOccupier);
+            outgoingMessage.WriteInt(iStartingFaction);
             outgoingMessage.WriteByte((byte)TerrainType);
             outgoingMessage.WriteByte((byte)CitySize);
             outgoingMessage.WriteByte((byte)Resources);
@@ -216,16 +244,17 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override int HashFullState(int asPlayer)
         {
-            int hash = HashCode.Combine(iCountry, iOccupier, TerrainType, CitySize, Resources);
+            int hash = Hashing.MurmurHash3_Combine(iCountry, iOccupier, (int)TerrainType, CitySize, Resources);
             unchecked
             {
                 for (int i = 0; i < ConnectedTileIDs.Length; i++)
                 {
-                    hash *= ConnectedTileIDs[i].GetHashCode();
+                    hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(ConnectedTileIDs[i]));
                 }
                 for (int i = 0; i < ConnectedTileBorderIDs.Length; i++)
                 {
-                    hash *= ConnectedTileBorderIDs[i].GetHashCode();
+                    hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(ConnectedTileBorderIDs[i]));
+
                 }
             }
             return hash;
@@ -269,6 +298,51 @@ namespace Game_Logic.TriumphAndTragedy
                 case BorderType.Unspecified:
                     return 0;
                 default: return 0;
+            }
+        }
+
+        public void EvaluateControl()
+        {
+            GameCountry prevOccupier = Occupier;
+            bool contested = false;
+            bool firstFactionNeutral = false;
+            GameFaction firstFactionPresent = null; // The first faction found. If a second faction is found after this value is set, then the tile is contested and does not change hands
+            foreach (var gameCadre in GetCadresOnTile())
+            {
+                if (firstFactionPresent == null && firstFactionNeutral == false)
+                {
+                    firstFactionPresent = gameCadre.Faction;
+                    if (gameCadre.Faction == null) firstFactionNeutral = true;
+                }
+                else
+                {
+                    if (gameCadre.Faction != firstFactionPresent)
+                    {
+                        contested = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!contested)
+            {
+                if (firstFactionPresent != null && Country?.Faction != firstFactionPresent)
+                {
+                    Occupier = firstFactionPresent.LeaderCountry;
+                }
+                else
+                {
+                    Occupier = null;
+                }
+            }
+
+            if (prevOccupier != Occupier)
+            {
+                foreach (var gameFaction in GameState.GetEntitiesOfType<GameFaction>())
+                {
+                    GameState.FlagForRecalculation(gameFaction);
+                }
+                PushFullState();
             }
         }
     }

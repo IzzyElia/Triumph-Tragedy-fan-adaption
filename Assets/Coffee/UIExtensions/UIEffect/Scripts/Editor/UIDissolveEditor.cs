@@ -1,9 +1,9 @@
-﻿using UnityEditor;
-using UnityEditorInternal;
+﻿// EDITOR ONLY FILE --------------
+#if UNITY_EDITOR
+
+using UnityEditor;
 using UnityEngine;
 using System.Linq;
-using System.Collections.Generic;
-using UnityEngine.UI;
 
 namespace Coffee.UIExtensions.Editors
 {
@@ -179,3 +179,5 @@ namespace Coffee.UIExtensions.Editors
 		Shader _spriteShader;
 	}
 }
+
+#endif

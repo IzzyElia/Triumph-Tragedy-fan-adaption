@@ -1,6 +1,5 @@
 using System;
 using GameSharedInterfaces;
-using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents
 {
@@ -35,6 +34,11 @@ namespace GameBoard.UI.SpecializeComponents
                 if (IsNationalInsurgentEffect) Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.Country, CardPlayType.Insurgents, iTileOriCountry);
                 else Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.Tile, CardPlayType.Insurgents, iTileOriCountry);
             }
+        }
+
+        public override void OnDroppedOnPanel()
+        {
+            
         }
 
         protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)

@@ -102,7 +102,7 @@ namespace GameBoard.UI.SpecializeComponents
                 }
             }
 
-            if ((GameState.GamePhase != GamePhase.Production || GameState.ActivePlayer != iPlayer) && _placedUnits.Count > 0)
+            if ((GameState.GamePhase != GamePhase.Production || GameState.PositionInTurnOrder > GameState.PlayerPositionInTurnOrder(iPlayer)) && _placedUnits.Count > 0)
             {
                 foreach (var placedUnitRef in _placedUnits)
                 {

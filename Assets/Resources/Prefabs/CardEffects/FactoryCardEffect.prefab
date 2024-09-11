@@ -34,7 +34,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.11100001}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000061035156, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -0.00010681152, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3429234135726924440
@@ -249,6 +249,8 @@ MonoBehaviour:
   outlineImageHighlightColor: {r: 1, g: 0.99607843, b: 0.7607843, a: 1}
   backgroundImage: {fileID: 6099167604940418826}
   textMesh: []
+  factoryText: {fileID: 480709770923382428}
+  background: {fileID: 6099167604940418826}
 --- !u!1 &6968482707791587892
 GameObject:
   m_ObjectHideFlags: 0
@@ -261,7 +263,7 @@ GameObject:
   - component: {fileID: 9027374797806937882}
   - component: {fileID: 6099167604940418826}
   m_Layer: 5
-  m_Name: FactoryCardEffect
+  m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

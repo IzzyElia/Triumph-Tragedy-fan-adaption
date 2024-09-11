@@ -10,7 +10,7 @@ namespace GameBoard
     {
         private static GameObject prefab;
 
-        public static MapCadre Create(string name, Map map, MapTile tile, MapCountry country, UnitType unitType, int id)
+        public static MapCadre Create(string name, Map map, MapTile tile, MapCountry country, UnitType unitType, int pips, int maxPips, int id)
         {
             if (prefab is null)
             {
@@ -28,6 +28,12 @@ namespace GameBoard
             cadre._unitType = unitType;
             cadre.SetPositionUnanimated(cadre.ChoosePosition(tile));
             cadre.RecalculateAppearance();
+            cadre.Pips = pips; // These methods cause the pips manager to refresh its appearance
+            cadre.MaxPips = maxPips;
+            if (country.Faction is null)
+            {
+                Debug.Log($"Creating neutral cadre for unit {id} on {tile.name}");
+            }
             return cadre;
         }
     }

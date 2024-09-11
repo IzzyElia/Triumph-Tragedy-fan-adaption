@@ -7,9 +7,11 @@ using Unity.Collections;
 using UnityEngine;
 using System.Reflection;
 using Game_Logic;
+using Game_Logic.TriumphAndTragedy.AI;
 using GameBoard.UI;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 
 namespace GameLogic
 {
@@ -32,15 +34,20 @@ namespace GameLogic
             get
             {
                 int hashCode = 17;
-                foreach (var pair in _entitiesMap)
+                unchecked
                 {
-                    hashCode ^= pair.Key.GetHashCode();
-                    hashCode ^= pair.Value.Length.GetHashCode();
+                    foreach (var pair in _entitiesMap)
+                    {
+                        hashCode += Hashing.MurmurHash3(pair.Key.FullName);
+                        hashCode += Hashing.MurmurHash3(pair.Value.Length);
+                    }
                 }
                 return hashCode;
             }
         }
         public UnityNetworkMember NetworkMember;
+        protected UnityServer Server => NetworkMember as UnityServer;
+        protected UnityClient Client => NetworkMember as UnityClient;
         public bool HasStartedInitialSync { get; private set; } = false;
         public IReadOnlyCollection<int> Players
         {
@@ -70,7 +77,7 @@ namespace GameLogic
 
         public string MapName;
         public string RulesetName;
-        public bool IsServer => NetworkMember is UnityServer;
+        public bool IsServer => !(NetworkMember is UnityClient);
         public Map MapRenderer;
         public Ruleset Ruleset { get; set; }
         public UIController UIController;
@@ -79,22 +86,26 @@ namespace GameLogic
         /// </summary>
         public bool IsBeingResynced { get; private set; } = false;
 
-        public bool IsSynced { get; private set; } = false;
+        public bool IsSynced { get; set; } = false;
         public bool IsWaitingOnNetworkReply => NetworkMember.WaitingOnReply;
 
         public int iPlayer => IsServer ? -1 : ((UnityClient)NetworkMember).PlayerSlot; // The player the gamestate is for
         public abstract int ActivePlayer { get; }
         public abstract bool IsWaitingOnPlayer(int iPlayer);
+        public Bot Bot;
 
 
         public GameState()
         {
+            SetupRecalculationQueueDictionary();
         }
 
+        public abstract void RunBot();
+        public abstract void RebuildBot();
         /// <summary>
         /// Fully refresh the map renderer from scratch
         /// </summary>
-        protected abstract void FullyRefreshMapRenderer();
+        public abstract void FullyRefreshMapRenderer();
         public abstract void CalculateDerivedTileAndBorderValues(Map map);
         public abstract void ReceiveGameStateUpdate(ref DataStreamReader incomingMessage);
         protected DataStreamWriter StartGameStateUpdate(int targetPlayer)
@@ -113,6 +124,7 @@ namespace GameLogic
         }
         protected void PushGameStateUpdate(ref DataStreamWriter outgoingMessage, int targetPlayer)
         {
+            if (!Server.FilledPlayerSlots.Contains(targetPlayer)) return;
             try
             {
                 UnityServer server = (UnityServer)NetworkMember;
@@ -143,7 +155,7 @@ namespace GameLogic
 
         public void StartGame()
         {
-            if (!IsServer) throw new InvalidOperationException("GameState.StartGame() is used to initialize the game serverside. It should not be called by clients");
+            if (!IsServer) throw new ServerOnlyException("GameState.StartGame() is used to initialize the game serverside. It should not be called by clients");
             Debug.Log($"Starting game with {PlayerCount} players");
             OnGameStart();
         }
@@ -221,6 +233,46 @@ namespace GameLogic
         }
         public abstract void OnSendingSync(int targetPlayer);
 
+        private bool _recalculationsNeeded = false;
+        protected HashsetDictionary<Type, GameEntity> RecalculationQueue = new ();
+        public void FlagForRecalculation(GameEntity entity)
+        {
+            _recalculationsNeeded = true;
+            try
+            {
+                RecalculationQueue.Add_CertainOfKey(entity.GetType(), entity);
+
+            }
+            catch (KeyNotFoundException e)
+            {
+                // Make sure to add every non-abstract implementation of GameEntity to the RecalculationQueue dictionary during SetupRecalculationQueueDictionary()
+                Debug.LogError($"{entity.GetType().Name} not added to the recalculation dictionary");
+            }
+        }
+        
+        protected abstract void SetupRecalculationQueueDictionary();
+        protected abstract void HandleRecalculations();
+        public void RunRecalculations()
+        {
+            if (!_recalculationsNeeded) return; // If no recalculation is needed, there is nothing to do - exit
+            
+            HandleRecalculations(); // The implementation should call RecalculateDerivedValues on every object in the recalculation dictionary, then clear all the lists
+            
+            RecalculationQueue.Clear_KeepKeys();
+
+            _recalculationsNeeded = false;
+        }
+        
+        public void RecalculateAllDerivedValues()
+        {
+            foreach (GameEntity[] gameEntitiesOfType in _entitiesMap.Values)
+            {
+                foreach (var gameEntity in gameEntitiesOfType)
+                {
+                    if (gameEntity is not null) FlagForRecalculation(gameEntity);
+                }
+            }
+        }
         public List<ICard> GetCardsInHand(int iPlayerFaction)
         {
             List<ICard> cards = new List<ICard>();
@@ -244,10 +296,21 @@ namespace GameLogic
                     NetworkMember.NetworkingLog($"finishing resync");
                     IsBeingResynced = false;
                     IsSynced = true;
-                    CalculateDerivedTileAndBorderValues(MapRenderer);
-                    FullyRefreshMapRenderer();
-                    UIController.UnresolvedStateChange = true;
-                    UIController.UnresolvedResync = true;
+                    foreach (var gameEntity in GetAllEntities())
+                    {
+                        FlagForRecalculation(gameEntity);
+                    }
+                    if (NetworkMember.GameStarted)
+                    {
+                        //CalculateDerivedTileAndBorderValues(MapRenderer);
+                        if (NetworkMember.GameState.IsSynced)
+                        {
+                            FullyRefreshMapRenderer();
+                            FlagStateChange(resynced:true);
+                            UIController.SetActive(Controller.ActiveLocalClient == (UnityClient)this.NetworkMember);
+                        }
+                    }
+                    if (NetworkMember is UnityClient client && client.IsBot) RebuildBot();
                     break;
                 case InitResyncHeader:
                     NetworkMember.NetworkingLog($"starting resync");
@@ -274,6 +337,7 @@ namespace GameLogic
                     break;
 
                 case GameEntityUpdateHeader:
+                    if (!HasStartedInitialSync) break;
                     byte bType = message.ReadByte();
                     int id = message.ReadInt();
                     Type type;
@@ -290,15 +354,26 @@ namespace GameLogic
 
                     GameEntity entity = GetOrCreateEntity(type, id);
                     entity.ReceiveUpdate(ref message);
-                    UIController.UnresolvedStateChange = true;
+                    FlagStateChange();
                     break;
                 case GameStateUpdateHeader:
                     // Only accept game state updates if the initial sync has been started. Otherwise, discard them
-                    if (HasStartedInitialSync) ReceiveGameStateUpdate(ref message);
-                    else Debug.LogWarning("Client received game state data despite not having begun a sync");
-                    UIController.UnresolvedStateChange = true;
+                    if (!HasStartedInitialSync) break;
+                    ReceiveGameStateUpdate(ref message);
+                    FlagStateChange();
                     break;
             }
+        }
+
+        public void FlagStateChange(bool resynced = false)
+        {
+            if (resynced)
+            {
+                if (NetworkMember.GameStarted) UIController.UnresolvedResync = true;
+                Controller.UnresolvedResync = true;
+            }
+            if (NetworkMember.GameStarted) UIController.UnresolvedStateChange = true;
+            Controller.UnresolvedStateChange = true;
         }
 
         public T GetEntity<T>(int id) where T : GameEntity => (T)GetEntity(typeof(T), id);
@@ -427,12 +502,12 @@ namespace GameLogic
                 {
                     if (_entitiesMap.TryGetValue(GetTypeFromID((byte)i), out entities))
                     {
-                        hash *= i.GetHashCode();
+                        hash *= Hashing.MurmurHash3(i);
                         for (int j = 0; j < entities.Length; j++)
                         {
                             if (entities[j] != null && entities[j].Active)
                             {
-                                hash *= j.GetHashCode();
+                                hash *= Hashing.MurmurHash3(j);
                                 hash *= entities[j].HashFullState(asPlayer);
                                 if (LogHashInfo) fileStream.WriteLine($"{GetTypeFromID((byte)i).Name} #{j}: {entities[j].HashFullState(asPlayer)} (!{hash}!)");
                             }
@@ -478,7 +553,7 @@ namespace GameLogic
             
             // Concatenate the full names of all types.
             var concatenatedTypes = gameEntityTypes.Aggregate("", (current, type) => current + type.FullName);
-            TypesHash = concatenatedTypes.GetHashCode();
+            TypesHash = Hashing.MurmurHash3(concatenatedTypes);
         }
         public static void SetTypeID(Type type, byte id)
         {

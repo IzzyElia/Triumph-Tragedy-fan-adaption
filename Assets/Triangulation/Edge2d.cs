@@ -7,7 +7,6 @@ namespace Triangulation
     {
         public Vector2 A { get; private set; }
         public Vector2 B { get; private set; }
-        public int _debugHash { get => GetHashCode(); }
         public Vector2 Midpoint => new Vector2((A.x + B.x) / 2, (A.y + B.y) / 2);
         public Edge2d PerpendicularBisector
         {

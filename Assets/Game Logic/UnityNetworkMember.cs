@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using GameSharedInterfaces;
-using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
 
 namespace GameLogic
 {
+
     public enum DebuggingLevel
     {
         Always,
@@ -32,6 +32,8 @@ namespace GameLogic
         public const byte PlayerActionReplyHeader = 9;
         public const byte SyncCheck = 10;
         public const byte SyncCheckResponse = 11;
+        public const byte RequestPlayerSlotHeader = 12;
+        public const byte NotifyPlayerSlotHeader = 13;
 
         public const byte DenialCode_Approved = 0;
         public const byte DenialCode_WrongPassword = 1;
@@ -44,6 +46,8 @@ namespace GameLogic
         protected abstract NetworkDriver NetworkDriver { get; }
         protected abstract IReadOnlyCollection<NetworkConnection> Connections { get; }
         public abstract bool WaitingOnReply { get; }
+        public bool GameStarted = false;
+        public bool Disposed { get; protected set; } = false;
         
         protected UnityNetworkMember(GameState gameState, ushort port = NetProtocol.DefaultPort)
         {

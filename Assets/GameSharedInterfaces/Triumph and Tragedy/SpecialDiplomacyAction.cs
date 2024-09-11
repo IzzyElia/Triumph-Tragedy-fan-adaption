@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Izzy;
 using UnityEngine;
 
 namespace GameSharedInterfaces.Triumph_and_Tragedy
@@ -20,14 +21,14 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
             int hash = 17;
             unchecked
             {
-                hash *= faction.GetHashCode();
+                hash *= Hashing.MurmurHash3(faction);
                 foreach (var country in countries)
                 {
-                    hash *= country.GetHashCode();
+                    hash *= Hashing.MurmurHash3(country);
                 }
                 foreach (var tile in tiles)
                 {
-                    hash *= tile.GetHashCode();
+                    hash *= Hashing.MurmurHash3(tile);
                 }
             }
             return hash;

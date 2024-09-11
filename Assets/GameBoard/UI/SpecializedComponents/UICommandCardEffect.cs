@@ -45,6 +45,7 @@ namespace GameBoard.UI.SpecializeComponents
         
         public override void OnActivated()
         {
+            /*
             if (HighlightState == HighlightState.Darken) return;
             if (HighlightState == HighlightState.Highlight)
             {
@@ -54,6 +55,13 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.Global, CardPlayType.Command, Card.cardID);
             }
+            */
+        }
+
+        public override void OnDroppedOnPanel()
+        {
+            if (Card.CardHand.TargetedCardPlayPanel.CardPlayOption == CardPlayOption.Commands) 
+                Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.Global, CardPlayType.Command, -1);
         }
 
         protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)
@@ -61,14 +69,9 @@ namespace GameBoard.UI.SpecializeComponents
             if (Card.CardHand.CardsInPlayArea.Contains(Card))
             {
                 if (GameState.GamePhase != GamePhase.SelectCommandCards) return HighlightState.Darken;
-                if (cardplayInfo.TargetType == CardEffectTargetSelectionType.Global &&
-                    cardplayInfo.iTarget == Card.cardID)
+                if (Card.CardHand.TargetedCardPlayPanel.CardPlayOption == CardPlayOption.Commands)
                 {
                     return HighlightState.Highlight;
-                }
-                else if (cardplayInfo.TargetType == CardEffectTargetSelectionType.None)
-                {
-                    return HighlightState.Neutral;
                 }
                 else
                 {

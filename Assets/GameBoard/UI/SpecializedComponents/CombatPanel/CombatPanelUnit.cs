@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,7 +10,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
     public class CombatPanelUnit : UIComponent, ICombatPanelUnit
     {
         private static GameObject _cachedPrefab;
-        public static CombatPanelUnit Create(CombatPanelUnitGroup unitGroup, int pips, int maxPips, UnitType unitType, MapCountry country)
+        public static CombatPanelUnit Create(CombatPanelUnitGroup unitGroup, IGameCadre gameCadre)
         {
             if (_cachedPrefab is null) _cachedPrefab = Resources.Load<GameObject>("Prefabs/CombatPanel/Unit");
 
@@ -18,7 +20,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             if (unitController is null) throw new InvalidOperationException($"Combat panel unit prefab does not have the required component");
             unitGroup.UIController.RegisterUIComponent(unitController);
             unitController.UIController = unitGroup.UIController;
-            unitController.SetBaseValues(pips:pips, maxPips:maxPips, unitType:unitType, country:country);
+            unitController.SetBaseValues(pips:gameCadre.Pips, maxPips:gameCadre.MaxPips, unitType:gameCadre.UnitType, country:unitGroup.MapRenderer.MapCountriesByID[gameCadre.iCountry], id:gameCadre.ID);
             return unitController;
         }
 
@@ -27,13 +29,16 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         [SerializeField] private GameObject pipsLayout;
         [SerializeField] private Gradient gradient;
 
+        private int cadreID;
         private UnitType unitType;
         private MapCountry country;
         private int maxPips;
         private int pips;
+        public int CadreID => cadreID;
+        public int Pips => pips;
         private Image[] _pipImages = Array.Empty<Image>();
 
-        void Refresh()
+        public void Refresh()
         {
             flagImage.sprite = country.FlagSprite;
             unitIconImage.sprite = unitType.GetSprite(country.name);
@@ -67,18 +72,28 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             }
         }
 
-        public void SetPips(int pips, bool animateChange)
+        private HashSet<uint> appliedHits = new HashSet<uint>();
+        public void AnimateHit(CombatRoll combatRoll)
+        {
+            if (appliedHits.Contains(combatRoll.UID)) return;
+            
+            appliedHits.Add(combatRoll.UID);
+            SetPips(pips - 1);
+        }
+
+        public void SetPips(int pips)
         {
             this.pips = pips;
             Refresh();
         }
 
-        public void SetBaseValues(int pips, int maxPips, UnitType unitType, MapCountry country)
+        public void SetBaseValues(int pips, int maxPips, UnitType unitType, MapCountry country, int id)
         {
             this.pips = pips;
             this.maxPips = maxPips;
             this.unitType = unitType;
             this.country = country;
+            this.cadreID = id;
             Refresh();
         }
 

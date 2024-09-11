@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameLogic;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy.ForcedInitialization;
 using Unity.Collections;
-using NotImplementedException = System.NotImplementedException;
 
 namespace Game_Logic.TriumphAndTragedy
 {

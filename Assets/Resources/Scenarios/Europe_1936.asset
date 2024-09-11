@@ -12,9 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb59fb54df964fecbd7960fae4cbf88b, type: 3}
   m_Name: Europe_1936
   m_EditorClassIdentifier: 
-  startYear: 0
+  scenarioDisplayName: Europe 1936
+  scenarioThumbnail: {fileID: 21300000, guid: 5cdd7146f2989473caeb12f0bc92c954, type: 3}
+  mapName: Triumph_And_Tragedy
+  startYear: 1936
   factions:
   - name: Fascists
+    Ideology: Fascist
+    startingIndustry: 12
+    startingCards: 14
+    handLimit: 7
+    emergencyCommandMoves: 4
     countries:
     - Germany
     - Italy
@@ -41,8 +49,12 @@ MonoBehaviour:
       Country: Italy
       startingCadres: 2
     startingSpecialUnits: []
-    startingIndustry: 12
   - name: Capitalists
+    Ideology: Capitalist
+    startingIndustry: 7
+    startingCards: 8
+    handLimit: 8
+    emergencyCommandMoves: 2
     countries:
     - Britain
     - France
@@ -72,24 +84,28 @@ MonoBehaviour:
       Country: France
       startingCadres: 1
     startingSpecialUnits:
-    - Tile: 
-      Country: 
+    - Tile: London
+      Country: Britain
       UnitType: Fleet
       pips: 4
-    - Tile: 
-      Country: 
+    - Tile: Gibraltar
+      Country: Britain
       UnitType: Fortress
       pips: 1
-    - Tile: 
-      Country: 
+    - Tile: Karachi
+      Country: Britain
       UnitType: Infantry
       pips: 1
-    - Tile: 
-      Country: 
+    - Tile: Lorraine
+      Country: France
       UnitType: Fortress
       pips: 3
-    startingIndustry: 7
   - name: Communists
+    Ideology: Communist
+    startingIndustry: 9
+    startingCards: 0
+    handLimit: 6
+    emergencyCommandMoves: 2
     countries:
     - USSR
     startingUnits:
@@ -102,5 +118,19 @@ MonoBehaviour:
     - MapTile: Baku
       Country: USSR
       startingCadres: 2
+    - MapTile: Kiev
+      Country: USSR
+      startingCadres: 1
+    - MapTile: Odessa
+      Country: USSR
+      startingCadres: 1
+    - MapTile: Kharkov
+      Country: USSR
+      startingCadres: 1
+    - MapTile: Stalingrad
+      Country: USSR
+      startingCadres: 1
+    - MapTile: Urals
+      Country: USSR
+      startingCadres: 1
     startingSpecialUnits: []
-    startingIndustry: 9

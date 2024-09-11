@@ -5,7 +5,6 @@ using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.UI;
 
 namespace GameBoard.UI
 {
@@ -20,9 +19,16 @@ namespace GameBoard.UI
     //[ExecuteAlways]
     public class UICardHand : UIWindow
     {
+        
         public override void Start()
         {
             base.Start();
+            LoadResources();
+        }
+
+        void LoadResources()
+        {
+            if (_loadedResources) return;
             CardPreviewPrefab = Resources.Load<GameObject>("Prefabs/CardPreview");
             ActionCardPrefab = Resources.Load<GameObject>("Prefabs/ActionCard");
             ActionCardCountryEffectPrefab = Resources.Load<GameObject>("Prefabs/CardEffects/CountryCardEffect");
@@ -38,16 +44,17 @@ namespace GameBoard.UI
             ActionCardBack = Resources.Load<Sprite>("Graphics/ActionCardBack");
             UniversalCardBack = Resources.Load<Sprite>("Graphics/ActionCardBack");
         }
-
+        
         public bool SelectingCardEffect;
 
+
+        private bool _loadedResources = false;
         public GameObject CardPreviewPrefab;
         public GameObject ActionCardPrefab;
         public GameObject ActionCardCountryEffectPrefab;
         public GameObject ActionCardInsurgentEffectPrefab;
         public GameObject ActionCardSpecialEffectPrefab;
         public GameObject ActionCardCommandEffectPrefab;
-        
         public GameObject InvestmentCardPrefab;
         public GameObject InvestmentCardTechEffectPrefab;
         public GameObject InvestmentCardSpecialEffectPrefab;
@@ -78,6 +85,14 @@ namespace GameBoard.UI
         private List<CardType> _queuedCards = new List<CardType>();
         public void RefreshCards()
         {
+            LoadResources();
+            List<UICard> oldCardsInPlayArea = new List<UICard>(CardsInPlayArea);
+            CardsInPlayArea.Clear();
+            RecalculateCardsInHand();
+            foreach (var card in oldCardsInPlayArea)
+            {
+                OnCardsInPlayAreaChanged(null, card);
+            }
             List<ICard> cardData = GameState.GetCardsInHand(iPlayer);
             int queuedActionCards = 0;
             int queuedInvestmentCards = 0;
@@ -237,6 +252,7 @@ namespace GameBoard.UI
 
         public override void OnResyncEnded()
         {
+            DropCards();
             RefreshCards();
         }
         
@@ -249,7 +265,6 @@ namespace GameBoard.UI
             CardsInPlayArea.Clear();
             if (HeldCard is not null)
             {
-                HeldCard.OnMovedToHand();
                 HeldCard = null;
             }
             TargetedCardPlayPanel = null;
@@ -326,8 +341,8 @@ namespace GameBoard.UI
                             TargetedCardPlayPanel = cardPlayPanel;
                             CardsInPlayArea.Add(HeldCard);
                             RecalculateCardsInHand();
+                            HeldCard.OnDroppedOnPanel();
                             OnCardsInPlayAreaChanged(HeldCard, null);
-                            HeldCard.OnMovedToPlayArea();
                         }
                     }
 
@@ -375,7 +390,6 @@ namespace GameBoard.UI
                             new CardplayInfo(CardEffectTargetSelectionType.None,
                                 CardPlayType.None, -1, Array.Empty<int>()));
                     }
-                    HeldCard.OnMovedToHand();
                 }
             }
             
@@ -601,15 +615,18 @@ namespace GameBoard.UI
             }
         }
 
-        public override bool WantsToBeActive => true;
+        public override bool WantsToBeActive => 
+            GameState.GamePhase == GamePhase.Diplomacy ||
+            GameState.GamePhase == GamePhase.Production ||
+            GameState.GamePhase == GamePhase.SelectCommandCards;
         protected override void OnActive()
         {
-            Debug.LogWarning("OnActive needs implementation");
+            RefreshCards();
         }
 
         protected override void OnHidden()
         {
-            throw new System.NotImplementedException();
+            
         }
         
         // Utility Functions

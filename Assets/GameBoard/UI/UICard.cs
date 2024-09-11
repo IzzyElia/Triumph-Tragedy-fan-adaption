@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using GameBoard.UI.SpecializeComponents;
 using GameSharedInterfaces;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using HighlightState = GameSharedInterfaces.HighlightState;
@@ -134,25 +133,12 @@ namespace GameBoard.UI
             //Handled by UICardHand
         }
 
-        public void OnMovedToPlayArea()
+        public void OnDroppedOnPanel()
         {
-            /* Commented because it also needs to work for main effects
-            if (CardHand.SelectingCardEffect)
+            foreach (var cardEffect in CardEffects)
             {
-                SetAnchors(cardTextArea, new Vector2(cardTextArea.anchorMin.x, 1), new Vector2(cardTextArea.anchorMax.x, 1));
-                SetAnchors(cardEffectWrapper, new Vector2(0, 0), new Vector2(1, 1));
-                _animatingAreaSizes = true;
-                _animationTimer = AnimationTime;
+                cardEffect.OnDroppedOnPanel();
             }
-            */
-        }
-        public void OnMovedToHand()
-        {
-            SetAnchors(cardMainEffectWrapper, _cardMainEffectWrapperRectTransformProperties.AnchorMin,
-                _cardMainEffectWrapperRectTransformProperties.AnchorMax);
-            SetAnchors(cardEffectWrapper, _cardEffectWrapperRectTransformProperties.AnchorMin, _cardEffectWrapperRectTransformProperties.AnchorMax);
-            _animatingAreaSizes = true;
-            _animationTimer = AnimationTime;
         }
 
 
@@ -164,55 +150,6 @@ namespace GameBoard.UI
         private bool _animatingAreaSizes = false;
         private int _animationTimer = 0;
         private const int AnimationTime = 30;
-        void HandleAnimation()
-        {
-            if (_animatingAreaSizes)
-            {
-                float t = Time.deltaTime * CardHand.CardMovementSpeed;
-                _animationTimer--;
-                if (_animationTimer < 0)
-                {
-                    _animatingAreaSizes = false;
-                    t = 1;
-                }
-                if (CardHand.CardsInPlayArea.Contains(this))
-                {
-                    LerpRect(cardMainEffectWrapper, 
-                        new Vector2(
-                            0,
-                            0
-                        ),
-                        new Vector2(
-                            0,
-                            0
-                        ),
-                        t
-                    );
-                    LerpRect(cardEffectWrapper, 
-                        new Vector2(
-                            0,
-                            0
-                        ),
-                        new Vector2(
-                            0,
-                            0
-                        ),
-                        t
-                    );
-                    
-                }
-                else
-                {
-                    LerpRect(cardMainEffectWrapper, 
-                        _cardMainEffectWrapperRectTransformProperties.OffsetMin, 
-                        _cardMainEffectWrapperRectTransformProperties.OffsetMax, t);
-                    LerpRect(cardEffectWrapper, 
-                        _cardEffectWrapperRectTransformProperties.OffsetMin, 
-                        _cardEffectWrapperRectTransformProperties.OffsetMax,
-                        t);
-                }
-            }
-        }
         public void SetAnchors(RectTransform rectTransform, Vector2 newAnchorMin, Vector2 newAnchorMax, bool preserveSize = false)
         {
             var OriginalPosition = rectTransform.localPosition;

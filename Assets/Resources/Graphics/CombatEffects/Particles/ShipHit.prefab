@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 520022164914092756}
   - component: {fileID: 5238138576121951260}
   - component: {fileID: -5463715168917832258}
+  - component: {fileID: -2402806118686724642}
   m_Layer: 0
   m_Name: ShipHit
   m_TagString: Untagged
@@ -99,10 +100,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lifetime: 0.2
   spriteRenderer: {fileID: 5238138576121951260}
-  sound:
+--- !u!114 &-2402806118686724642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8740867274393299315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CollisionTag: 
+  EventReference:
     Guid:
       Data1: -2023173579
       Data2: 1317479245
       Data3: 273293461
       Data4: 2146304397
     Path: event:/Combat/ArtilleryHit
+  Event: 
+  PlayEvent: 1
+  StopEvent: 0
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  AllowNonRigidbodyDoppler: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 1
+  OverrideMaxDistance: 20

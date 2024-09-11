@@ -7,7 +7,6 @@ using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy.ForcedInitialization;
 using Unity.Collections;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Game_Logic.TriumphAndTragedy
 {
@@ -23,6 +22,7 @@ namespace Game_Logic.TriumphAndTragedy
         public override void Execute()
         {
             GameCadre cadre;
+            GameFaction playerFaction = GameState.GetEntity<GameFaction>(iPlayerFaction);
             foreach (var productionAction in _productionActions)
             {
                 List<ActionCard> actionDeck = GameCard.GetCardsInDeck<ActionCard>(GameState);
@@ -34,35 +34,29 @@ namespace Game_Logic.TriumphAndTragedy
                         GameTile tile = GameState.GetEntity<GameTile>(productionAction.iTile);
                         cadre = GameCadre.CreateCadre(GameState, productionAction.iUnitType, tile.Country.ID,
                             productionAction.iTile);
-                        cadre.RecalculateDerivedValuesAndPushFullState();
+                        cadre.PushFullState();
+                        foreach (var faction in GameState.GetEntitiesOfType<GameFaction>())
+                        {
+                            faction.RecalculateTotalPipCount(push:true);
+                        }
                         break;
                     case ProductionActionType.ReinforceUnit:
                         cadre = GameState.GetEntity<GameCadre>(productionAction.iCadre);
                         cadre.Pips += 1;
-                        cadre.RecalculateDerivedValues();
-                        cadre.RecalculateDerivedValuesAndPushFullState();
+                        cadre.PushFullState();
+                        foreach (var faction in GameState.GetEntitiesOfType<GameFaction>())
+                        {
+                            faction.RecalculateTotalPipCount(push:true);
+                        }
                         break;
                     case ProductionActionType.DrawCard:
-                        if (productionAction.CardType == CardType.Action)
-                        {
-                            int cardToDraw = Random.Range(minInclusive:0, maxExclusive:actionDeck.Count);
-                            actionDeck[cardToDraw].HoldingPlayer = iPlayerFaction;
-                            actionDeck[cardToDraw].RecalculateDerivedValuesAndPushFullState();
-                            actionDeck.RemoveAt(cardToDraw);
-                        }
-                        else if (productionAction.CardType == CardType.Investment)
-                        {
-                            int cardToDraw = Random.Range(minInclusive:0, maxExclusive:investmentDeck.Count);
-                            investmentDeck[cardToDraw].HoldingPlayer = iPlayerFaction;
-                            investmentDeck[cardToDraw].RecalculateDerivedValuesAndPushFullState();
-                            investmentDeck.RemoveAt(cardToDraw);
-                        }
+                        playerFaction.DrawCard(productionAction.CardType);
                         break;
                     default: throw new NotImplementedException();
                 }
             }
 
-            if (GameState.AdvanceTurnMarker())
+            if (GameState.AdvanceTurnMarkerAndReturnTrueIfAllPlayersWent())
             {
                 for (int i = 0; i < GameState.PlayerPassed.Length; i++)
                 {
@@ -177,7 +171,7 @@ namespace Game_Logic.TriumphAndTragedy
                     if (unitType == null) return (false, "Invalid unit type ");
                     if (!(tile.TerrainType == TerrainType.Land || tile.TerrainType == TerrainType.Strait))
                         return (false, "Unit must be placed on land");
-                    if (tile.Occupier != playerFaction) return (false, "tile not controlled by your faction");
+                    if (tile.Occupier?.Faction != playerFaction) return (false, "tile not controlled by your faction");
                     if ((unitType.Category == UnitCategory.Sea || unitType.Category == UnitCategory.Sub) && !tile.IsCoastal) 
                         return (false, "Navel units can only be built on coastal tiles");
                     if (!unitType.IsBuildableThroughNormalPlacementRules)
@@ -186,13 +180,10 @@ namespace Game_Logic.TriumphAndTragedy
                     {
                         case UnitPlacementRule.HomeTerritoryOnly:
                             if (!(tile.Country.Faction == playerFaction && tile.Country.MembershipStatus == FactionMembershipStatus.InitialMember))
-                                return (false, "Country must be a starting country of your faction");
+                                return (false, "Country must be one of the initial major powers of your faction");
                             break;
                         case UnitPlacementRule.DiploAnnexedCountriesAllowed:
-                            if ((tile.Country.Faction != playerFaction || !(
-                                    tile.Country.MembershipStatus == FactionMembershipStatus.InitialMember ||
-                                    tile.Country.MembershipStatus == FactionMembershipStatus.Ally
-                                ))) return (false, "Country must be a diplomatic member of your faction");
+                            if (tile.Country.Faction != playerFaction) return (false, "Country must be a member of your faction");
                             break;
                         case UnitPlacementRule.AllControlledTerritory:
                             break;

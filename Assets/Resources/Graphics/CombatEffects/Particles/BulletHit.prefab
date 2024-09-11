@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 520022164914092756}
   - component: {fileID: 5238138576121951260}
   - component: {fileID: -5463715168917832258}
+  - component: {fileID: -2117077965357682153}
   m_Layer: 0
   m_Name: BulletHit
   m_TagString: Untagged
@@ -99,10 +100,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lifetime: 1.5
   spriteRenderer: {fileID: 5238138576121951260}
-  sound:
+--- !u!114 &-2117077965357682153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8740867274393299315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CollisionTag: 
+  EventReference:
     Guid:
       Data1: -1441216315
       Data2: 1178998242
       Data3: -480675450
       Data4: 1365570019
     Path: event:/Combat/Bullet Hit
+  Event: 
+  PlayEvent: 1
+  StopEvent: 0
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  AllowNonRigidbodyDoppler: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 1
+  OverrideMaxDistance: 20

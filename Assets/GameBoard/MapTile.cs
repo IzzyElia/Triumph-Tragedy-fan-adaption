@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using TMPro;
 using TriangleNet.Geometry;
 using UnityEditor;
-using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
@@ -13,11 +13,17 @@ using Random = UnityEngine.Random;
 
 namespace GameBoard
 {
+    public struct ProjectedMembershipStatus
+    {
+        public int iFaction;
+        public int Influence;
+        public FactionMembershipStatus MembershipStatus => TTUtilityFunctions.InfluenceToMembershipStatus(Influence);
+    }
     public enum DarkenState
     {
         None,
         Combat,
-        SupportHighlight
+        SupportHighlight,
     }
     public enum TerrainType
     {
@@ -33,14 +39,32 @@ namespace GameBoard
         NotHighlighted,
         HoverHighlighted,
         NonHoverHighlighted,
+        SelectedHighlighted,
     }
     [ExecuteAlways]
     public class MapTile : MapObject
     {
+        [Serializable]
+        public class BorderReference
+        {
+            public MapBorder border;
+            public bool reverseVertexOrder;
+            public bool borderIsHole;
+
+            public BorderReference(MapBorder border)
+            {
+                this.border = border;
+                this.reverseVertexOrder = false;
+                this.borderIsHole = false;
+            }
+        }
+        
+        private static Texture2D _associateTexture;
+        private static Texture2D _protectorateTexture;
+        
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshRenderer meshRenderer;
         [SerializeField] private MeshCollider meshCollider;
-        [SerializeField] private TextMeshPro cityTextTMP;
 
         public Mesh Mesh
         {
@@ -50,10 +74,13 @@ namespace GameBoard
         public List<MapTile> connectedSpaces;
         public List<BorderReference> connectedBorders;
         [FormerlySerializedAs("country")] public MapCountry mapCountry;
+        [SerializeField] private TextMeshPro cityTextTMP;
         [SerializeField] private GameObject cityIcon;
-        [SerializeField] private GameObject cityText;
+        [SerializeField] private TextMeshPro cityIconText;
         [SerializeField] private GameObject resourceMarker;
+        [SerializeField] private TextMeshPro resourceMarkerText;
         [SerializeField] private GameObject colonialResourceMarker;
+        [SerializeField] private TextMeshPro colonialResourceMarkerText;
         public int startingCadres;
         public int resources;
         public int colonialResources;
@@ -66,29 +93,44 @@ namespace GameBoard
         [SerializeField] [HideInInspector] private Vector3[] lastCalculatedVertices = new Vector3[0];
         [SerializeField] [HideInInspector] private Vector3 lastCalculatedObjectPosition = Vector3.negativeInfinity;
         [SerializeField] public Vector3 holeMarker;
+        public Vector3 OverlayPositionAndSize;
         public bool containsHole { get; private set; }
         string MeshSavePath => $"Assets/Resources/Meshes/Map/Tiles/{name}.mesh";
         string MeshLoadPath => $"Meshes/Map/Tiles/{name}";
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-        private static Material seaMaterial;
-        private static Material landMaterial;
-        private static Material straitMaterial;
         private static Texture2D CombatDarkenTexture;
         [NonSerialized] public DarkenState CombatMarkerDarkenState;
         private static readonly int OccupierColor = Shader.PropertyToID("_OccupierColor");
+        private static readonly int OccupiedProperty = Shader.PropertyToID("_Occupied");
 
 
-        [NonSerialized] public MapCountry Occupier;
+        [ShowInDebugWindow] [NonSerialized] public MapCountry Occupier;
         [NonSerialized] public TileHighlightState HighlightState;
+        [ShowInDebugWindow] private string __ColonialOverlordName => mapCountry?.colonialOverlord?.name;
 
-        
-        private void Start()
+
+        private static Material seaMaterial;
+        private static Material landMaterial;
+        private static Material straitMaterial;
+        private static Material _overlayMaterial;
+        private static bool _texturesLoaded = false;
+
+        private void LoadTexturesIfNeeded()
         {
-            SetupMaterialForEditor();
+            if (_texturesLoaded) return;
             CombatDarkenTexture = Resources.Load<Texture2D>("Icons/Misc/Combat_Guns");
             seaMaterial = Resources.Load<Material>("Shaders/Sea");
             landMaterial = Resources.Load<Material>("Shaders/Land");
             straitMaterial = Resources.Load<Material>("Shaders/Strait");
+            _overlayMaterial = Resources.Load<Material>("Shaders/MapOverlay_Diplomacy");
+            _associateTexture = Resources.Load<Texture2D>("Icons/DiplomaticStatusOverlays/Associate");
+            _protectorateTexture = Resources.Load<Texture2D>("Icons/DiplomaticStatusOverlays/Protectorate");
+            _texturesLoaded = true;
+        }
+        private void Start()
+        {
+            LoadTexturesIfNeeded();
+            InitialMaterialSetup();
         }
 
         public bool IsPointInside(Vector2 point)
@@ -106,112 +148,8 @@ namespace GameBoard
             }
             return result;
         }
-        public void Recalculate(bool forceRecalculateMesh = false)
-        {
-#if UNITY_EDITOR
-            meshCollider.convex = false;
-            meshCollider.isTrigger = false;
-            gameObject.layer = LayerMask.NameToLayer("Tiles");
-            
-            mapCountry = transform.parent.GetComponent<MapCountry>();
-            if (forceRecalculateMesh)
-            {
-                FlashMesh();
-            }
-            else if (markComplete)
-            {
-                SetMeshToFlashed();
-            }
-            else
-            {
-                meshFilter.sharedMesh = RecalculateMesh();
-            }
-            SetupMaterialForEditor();
-            //if (!markComplete)
-            //    AutoReorderBorders();
-#endif
-        }
-
-        public void RecalculateMaterialDuringRuntime()
-        {
-            Color baseColor;
-            if (terrainType == TerrainType.Sea)
-            {
-                meshRenderer.material.SetColor(BaseColor, new Color(0.15f, 0.6f, 1f));
-            }
-            else if (terrainType == TerrainType.Ocean)
-            {
-                meshRenderer.material.SetColor(BaseColor, new Color(0.15f, 0.3f, 1f));
-
-            }
-            else if (terrainType == TerrainType.NotInPlay)
-            {
-                baseColor = Color.white * 0.2f ;
-            }
-            else if (terrainType == TerrainType.Land || terrainType == TerrainType.Strait)
-            {
-                if (Occupier is not null)
-                {
-                    meshRenderer.material.SetColor(OccupierColor, Occupier.CalculatedColor);
-                }
-                else
-                {
-                    meshRenderer.material.SetColor(OccupierColor, Color.white);
-                }
-
-                if (mapCountry.colonialOverlord is not null)
-                {
-                    meshRenderer.material.SetColor(BaseColor, (mapCountry.colonialOverlord.CalculatedColor*2 + mapCountry.CalculatedColor) / 3f);
-                }
-                else
-                {
-                    meshRenderer.material.SetColor(BaseColor, mapCountry.CalculatedColor);
-                }
-            }
-            else
-            {
-                Debug.LogError("Unsupported terrain type");
-                return;
-            }
-            
-            RecalculateHighlighting();
-        }
-
-        public void RecalculateHighlighting()
-        {
-            if (Map.UIController.HoveredOverTile == this && (Map.HoveredMapObject is null || !Map.HoveredMapObject.BlocksTileHovering))
-            {
-                HighlightState = TileHighlightState.HoverHighlighted;
-            }
-            else if (Map.UIController.MovementHighlights.Contains(this.ID) || CombatMarkerDarkenState == DarkenState.SupportHighlight)
-            {
-                HighlightState = TileHighlightState.NonHoverHighlighted;
-            }
-            else HighlightState = TileHighlightState.NotHighlighted;
-
-            foreach (var borderReference in connectedBorders)
-            {
-                borderReference.border.RecalculateMaterialRuntimeValues();
-            }
-            
-            // Darkening
-            switch (CombatMarkerDarkenState)
-            {
-                case DarkenState.None:
-                    meshRenderer.material.SetInt("_Darken", 0);
-                    break;
-                case DarkenState.Combat:
-                    meshRenderer.material.SetInt("_Darken", 1);
-                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
-                    break; 
-                case DarkenState.SupportHighlight:
-                    meshRenderer.material.SetInt("_Darken", 1);
-                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
-                    break;
-                default:throw new NotImplementedException();
-            }
-        }
-        private void SetupMaterialForEditor()
+        
+        private void InitialMaterialSetup()
         {
             Random.InitState(name.GetHashCode());
             //Color randColor = new Color(Random.value, Random.value, Random.value);
@@ -258,10 +196,228 @@ namespace GameBoard
                 return;
             }
 
+            if (material is not null)
+            {
+                material.SetVector("_OverlayPosition", new Vector4(OverlayPositionAndSize.x, OverlayPositionAndSize.y, 0, 0));
+                material.SetFloat("_OverlayInverseSize", OverlayPositionAndSize.z);
+            }
+
             meshRenderer.sharedMaterial = new Material(material);
             meshRenderer.sharedMaterial.SetColor(BaseColor, baseColor);
         }
-        /// <returns> (Min, Max) in world space </returns>
+
+        public void RecalculateMaterialDuringRuntime()
+        {
+            LoadTexturesIfNeeded();
+            Color baseColor;
+            Material updatedMaterial = meshRenderer.material;
+            Material newOverlayMaterial = new Material(_overlayMaterial);
+            bool useOverlay = false;
+            bool usePoliticalOverlay = Map.MapMode == MapMode.Political || Map.MapMode == MapMode.Diplomacy;
+            bool useColoredHighlightOverlay = Map.MapMode != MapMode.Political;
+            if (usePoliticalOverlay)
+            {
+                if (terrainType == TerrainType.Sea)
+                {
+                    updatedMaterial.SetColor(BaseColor, new Color(0.15f, 0.6f, 1f));
+                }
+                else if (terrainType == TerrainType.Ocean)
+                {
+                    updatedMaterial.SetColor(BaseColor, new Color(0.15f, 0.3f, 1f));
+                }
+                else if (terrainType == TerrainType.NotInPlay)
+                {
+                    updatedMaterial.SetColor(BaseColor, Color.white * 0.2f);
+                }
+                else if (terrainType == TerrainType.Land || terrainType == TerrainType.Strait)
+                {
+                    if (mapCountry is null)
+                    {
+                        updatedMaterial.SetFloat("_Influence", 0);
+                    }
+                    else
+                    {
+                        if (mapCountry.factionMembershipStatus == FactionMembershipStatus.InitialMember ||
+                            mapCountry.factionMembershipStatus == FactionMembershipStatus.Ally ||
+                            mapCountry.factionMembershipStatus == FactionMembershipStatus.Unaligned)
+                        {
+                            updatedMaterial.SetInt("_AssociatedWithFaction", 0);
+                        }
+                        else
+                        {
+                            useOverlay = true;
+                            updatedMaterial.SetInt("_AssociatedWithFaction", 1);
+                            updatedMaterial.SetTexture("_InfluencerFlag", mapCountry.associatedFaction.leader.Flag);
+                            newOverlayMaterial.SetTexture("_InfluencerFlag", mapCountry.associatedFaction.leader.OverlayFlag);
+                            if (mapCountry.factionMembershipStatus == FactionMembershipStatus.Associate)
+                            {
+                                newOverlayMaterial.SetTexture("_OverlayTexture", _associateTexture);
+                            }
+                            else if (mapCountry.factionMembershipStatus == FactionMembershipStatus.Protectorate)
+                            {
+                                newOverlayMaterial.SetTexture("_OverlayTexture", _protectorateTexture);
+                            }
+                            else throw new NotImplementedException();
+                        }
+                    }
+                    
+                    if (Occupier is not null)
+                    {
+                        updatedMaterial.SetInt(OccupiedProperty, 1);
+                        updatedMaterial.SetColor(OccupierColor, Occupier.CalculatedColor);
+                    }
+                    else
+                    {
+                        updatedMaterial.SetInt(OccupiedProperty, 0);
+                        updatedMaterial.SetColor(OccupierColor, Color.white);
+                    }
+
+                    if (mapCountry.colonialOverlord is not null)
+                    {
+                        updatedMaterial.SetColor(BaseColor, (mapCountry.colonialOverlord.CalculatedColor*2 + mapCountry.CalculatedColor) / 3f);
+                    }
+                    else
+                    {
+                        updatedMaterial.SetColor(BaseColor, mapCountry.CalculatedColor);
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Unsupported terrain type");
+                    return;
+                }
+            }
+            if (useColoredHighlightOverlay)
+            {
+                if (Map.GreenlitTiles.Contains(this.ID))
+                {
+                    updatedMaterial.SetColor(BaseColor, Map.GreenlitColor);
+                }
+                else if (Map.YellowlitTiles.Contains(this.ID))
+                {
+                    updatedMaterial.SetColor(BaseColor, Map.YellowlitColor);
+                }
+                else if (Map.RedlitTiles.Contains(this.ID))
+                {
+                    updatedMaterial.SetColor(BaseColor, Map.RedlitColor);
+                }
+                else if (Map.BluelitTiles.Contains(this.ID))
+                {
+                    updatedMaterial.SetColor(BaseColor, Map.BluelitColor);
+                }
+            }
+            
+            if (useOverlay)
+            {
+                meshRenderer.SetMaterials(new List<Material>() {updatedMaterial, newOverlayMaterial});
+            }
+            else
+            {
+                meshRenderer.SetMaterials(new List<Material>() {updatedMaterial});
+            }
+
+            RecalculateResourceIconsAndTileText();
+            RecalculateHighlighting();
+        }
+
+        public void RecalculateResourceIconsAndTileText()
+        {
+            cityTextTMP.gameObject.SetActive(true);
+            cityTextTMP.text = name;
+            cityTextTMP.color = Color.black;
+            
+            if (citySize > 0)
+            {
+                cityIcon.SetActive(true);
+                cityIconText.text = citySize.ToString();
+            }
+            else
+            {
+                cityIcon.SetActive(false);
+            }
+
+            if (resources > 0)
+            {
+                resourceMarker.SetActive(true);
+                resourceMarkerText.text = resources.ToString();
+            }
+            else
+            {
+                resourceMarker.SetActive(false);
+            }
+
+            if (colonialResources > 0)
+            {
+                colonialResourceMarker.SetActive(true);
+                colonialResourceMarkerText.text = colonialResources.ToString();
+            }
+            else
+            {
+                colonialResourceMarker.SetActive(false);
+            }
+        }
+        
+        public void RecalculateHighlighting()
+        {
+            if (Map.SelectedObject is MapTile tile && tile.mapCountry == mapCountry)
+            {
+                HighlightState = TileHighlightState.SelectedHighlighted;
+            }
+            else if (Map.UIController.HoveredOverTile == this && (Map.HoveredMapObject is null || !Map.HoveredMapObject.BlocksTileHovering))
+            {
+                HighlightState = TileHighlightState.HoverHighlighted;
+            }
+            else if (Map.UIController.MovementHighlights.Contains(this.ID) || CombatMarkerDarkenState == DarkenState.SupportHighlight)
+            {
+                HighlightState = TileHighlightState.NonHoverHighlighted;
+            }
+            else HighlightState = TileHighlightState.NotHighlighted;
+
+            foreach (var borderReference in connectedBorders)
+            {
+                borderReference.border.RecalculateMaterialRuntimeValues();
+            }
+            
+            // Darkening
+            switch (CombatMarkerDarkenState)
+            {
+                case DarkenState.None:
+                    meshRenderer.material.SetInt("_Darken", 0);
+                    break;
+                case DarkenState.Combat:
+                    meshRenderer.material.SetInt("_Darken", 1);
+                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
+                    break; 
+                case DarkenState.SupportHighlight:
+                    meshRenderer.material.SetInt("_Darken", 1);
+                    meshRenderer.material.SetTexture("_DarkenTexture", CombatDarkenTexture);
+                    break;
+                default:throw new NotImplementedException();
+            }
+        }
+        
+        public override void OnHoveredStatusChanged(bool isHoveredOver)
+        {
+            base.OnHoveredStatusChanged(isHoveredOver);
+            RecalculateMaterialDuringRuntime();
+        }
+
+        public override void OnSelectionStatusChanged(SelectionStatus selectionStatus)
+        {
+            base.OnSelectionStatusChanged(selectionStatus);
+            RecalculateHighlighting();
+            if (mapCountry is not null)
+            {
+                foreach (var mapTile in Map.MapTilesByID)
+                {
+                    if (mapTile.mapCountry == this.mapCountry) mapTile.RecalculateHighlighting();
+                }
+            }
+        }
+
+        public override bool IsSelectable => true;
+        
+                /// <returns> (Min, Max) in world space </returns>
         public (Vector2, Vector2) GetMeshBoundingBox()
         {
             Vector3[] vertices = Mesh.vertices;
@@ -310,6 +466,34 @@ namespace GameBoard
 
             return (vertices.ToArray(), hole.ToArray());
         }
+
+        // EDITOR -------------------------------------------------------
+#if UNITY_EDITOR
+        public void Recalculate(bool forceRecalculateMesh = false)
+        {
+            meshCollider.convex = false;
+            meshCollider.isTrigger = false;
+            gameObject.layer = LayerMask.NameToLayer("Tiles");
+            
+            mapCountry = transform.parent.GetComponent<MapCountry>();
+            if (forceRecalculateMesh)
+            {
+                FlashMesh();
+            }
+            else if (markComplete)
+            {
+                SetMeshToFlashed();
+            }
+            else
+            {
+                meshFilter.sharedMesh = RecalculateMesh();
+            }
+            InitialMaterialSetup();
+            RecalculateResourceIconsAndTileText();
+            //if (!markComplete)
+            //    AutoReorderBorders();
+        }
+        
         public Mesh RecalculateMesh()
         {
             (Vector3[] vertices, Vector3[] holeVertices) = GetVertices();
@@ -580,27 +764,6 @@ namespace GameBoard
             }
             return sum > 0;
         }
-
-        public override void OnHoveredStatusChanged(bool isHoveredOver)
-        {
-            base.OnHoveredStatusChanged(isHoveredOver);
-            RecalculateMaterialDuringRuntime();
-            RecalculateHighlighting();
-        }
-
-        [Serializable]
-        public class BorderReference
-        {
-            public MapBorder border;
-            public bool reverseVertexOrder;
-            public bool borderIsHole;
-
-            public BorderReference(MapBorder border)
-            {
-                this.border = border;
-                this.reverseVertexOrder = false;
-                this.borderIsHole = false;
-            }
-        }
+#endif
     }
 }

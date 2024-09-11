@@ -1,3 +1,4 @@
+using Izzy;
 using Unity.Collections;
 
 namespace GameSharedInterfaces.Triumph_and_Tragedy
@@ -10,7 +11,7 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         public short SeaDice;
         public short SubDice;
         public int TotalDice => AirDice + GroundDice + SeaDice + SubDice;
-        
+        public int HashCode_MurmurHash3 => Hashing.MurmurHash3_Combine(AirDice, GroundDice, SeaDice, SubDice);
         public static CombatDiceDistribution Recreate(ref DataStreamReader message)
         {
             return new CombatDiceDistribution

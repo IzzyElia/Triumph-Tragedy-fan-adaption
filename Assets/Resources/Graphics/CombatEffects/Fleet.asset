@@ -19,7 +19,7 @@ MonoBehaviour:
     unitPrefabs:
     - {fileID: 6461183895527199860, guid: f7a15020e9cdd4d9584ff49d310c80f1, type: 3}
   PerUnitEffects:
-  - MinNumber: 1
+  - MinNumber: 0
     MaxNumber: 1
     unitPrefabs:
     - {fileID: 6461183895527199860, guid: f7a15020e9cdd4d9584ff49d310c80f1, type: 3}
@@ -28,3 +28,5 @@ MonoBehaviour:
   DestinationBoxPosition: {x: -18, y: 0, z: 0}
   DestinationBoxSize: {x: 20, y: 0, z: 0}
   NearCameraPosition: {x: 100, y: 0, z: -3}
+  baseAnimationTime: 3
+  animationTimePerUnit: 1

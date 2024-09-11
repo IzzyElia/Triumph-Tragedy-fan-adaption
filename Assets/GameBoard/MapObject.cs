@@ -49,6 +49,7 @@ namespace GameBoard
         private bool _supressDestroyWarning = false;
         public void DestroyMapObject()
         {
+            if (IsDestroyed) return;
             foreach (var mapObject in GetComponentsInChildren<MapObject>(includeInactive:true))
             {
                 if (mapObject != this) mapObject.DestroyMapObject();

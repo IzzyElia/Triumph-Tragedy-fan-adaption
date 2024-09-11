@@ -1,6 +1,5 @@
 using System;
 using GameSharedInterfaces;
-using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents
 {
@@ -26,6 +25,11 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 Card.CardHand.SetCardEffectSelection(CardEffectTargetSelectionType.Country, CardPlayType.Diplomacy, iCountry);
             }
+        }
+
+        public override void OnDroppedOnPanel()
+        {
+            
         }
 
         protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)

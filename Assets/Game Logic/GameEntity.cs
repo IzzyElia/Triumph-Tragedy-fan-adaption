@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using GameBoard;
 using GameSharedInterfaces.Triumph_and_Tragedy;
-using IzzysConsole;
 using Unity.Collections;
 using UnityEngine;
 
@@ -26,7 +25,13 @@ namespace GameLogic
         public Map MapRenderer => GameState.MapRenderer;
         protected UnityServer Server => GameState.NetworkMember as UnityServer;
         protected UnityClient Client => GameState.NetworkMember as UnityClient;
-        public bool Active = false;
+        private bool _active = false;
+        public bool Active
+        {
+            get => _active;
+            set => _active = value;
+        }
+        
 
         public static GameEntity Create(Type type, GameState gameState)
         {
@@ -48,7 +53,7 @@ namespace GameLogic
             {
                 foreach (int iPlayer in GameState.Players)
                 {
-                    RecalculateDerivedValuesAndPushFullState(iPlayer);
+                    PushFullState(iPlayer);
                 }
             }
             else
@@ -56,6 +61,7 @@ namespace GameLogic
         }
         public void PushFullState(int targetPlayer)
         {
+            if (!Server.FilledPlayerSlots.Contains(targetPlayer)) return;
             GameState.NetworkMember.NetworkingLog($"Pushing full state of {GetType().Name} #{ID} to player {targetPlayer}", DebuggingLevel.IndividualMessageSends);
             if (GameState.NetworkMember is UnityServer server)
             {
@@ -67,43 +73,7 @@ namespace GameLogic
             }
             else Debug.LogError("Not a serverside entity");
         }
-        public void RecalculateDerivedValuesAndPushFullState()
-        {
-            RecalculateDerivedValues();
-            if (GameState.NetworkMember is UnityServer server)
-            {
-                foreach (int iPlayer in GameState.Players)
-                {
-                    PushFullState(iPlayer);
-                }
-            }
-            else
-                Debug.LogError("Not a serverside entity");
-        }
-        public void RecalculateDerivedValuesAndPushFullState(int targetPlayer)
-        {
-            RecalculateDerivedValues();
-            PushFullState(targetPlayer);
-        }
-
-        protected ICollection<(int iPlayer, DataStreamWriter message)> StartCustomUpdates(byte customHeader)
-        {
-            if (GameState.NetworkMember is UnityServer server)
-            {
-                (int iPlayer, DataStreamWriter message)[] messages = new (int iPlayer, DataStreamWriter message)[server.ApprovedConnections.Count];
-                int i = 0;
-                foreach (int iPlayer in GameState.Players)
-                {
-                    DataStreamWriter message = StartCustomUpdate(customHeader, iPlayer);
-                    messages[i] = (iPlayer, message);
-                    i++;
-                }
-                return messages;
-            }
-            
-            Debug.LogError("Not a serverside entity");
-            return Array.Empty<(int iPlayer, DataStreamWriter message)>();
-        }
+        
         protected DataStreamWriter StartCustomUpdate(byte customHeader, int targetPlayer)
         {
             DataStreamWriter outgoingMessage = GameState.CreateEntityUpdateMessage(targetPlayer, GetType(), ID);
@@ -115,6 +85,7 @@ namespace GameLogic
         
         protected void PushCustomUpdate(int targetPlayer, ref DataStreamWriter update)
         {
+            if (!Server.FilledPlayerSlots.Contains(targetPlayer)) return;
             if (GameState.NetworkMember is UnityServer server)
             {
                 server.PushMessage(ref update, targetPlayer);
@@ -122,6 +93,7 @@ namespace GameLogic
             else throw new InvalidOperationException("Not a serverside entity");
         }
 
+        public abstract void RefreshMapState();
 
         public void ReceiveUpdate(ref DataStreamReader incomingMessage)
         {
@@ -152,7 +124,6 @@ namespace GameLogic
             RecalculateDerivedValues();
             if (wasActive && !Active) OnDeactivatedClientside();
         }
-
         public virtual void RecalculateDerivedValues() {}
         protected abstract void ReceiveFullState(ref DataStreamReader incomingMessage);
         protected abstract void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage);

@@ -1,5 +1,3 @@
-using GameSharedInterfaces.Triumph_and_Tragedy;
-
 namespace GameBoard.UI.SpecializeComponents
 {
 using System;
@@ -37,9 +35,14 @@ namespace GameBoard.UI.SpecializeComponents
             }
         }
 
+        public override void OnDroppedOnPanel()
+        {
+            
+        }
+
         protected override HighlightState ShouldHighlight(CardplayInfo cardplayInfo)
         {
-            if (GameState.GamePhase != GamePhase.SelectCommandCards) return GameSharedInterfaces.HighlightState.Darken;
+            if (GameState.GamePhase != GamePhase.Diplomacy) return GameSharedInterfaces.HighlightState.Darken;
             if (Card.CardHand.CardsInPlayArea.Contains(Card))
             {
                 if (cardplayInfo.TargetType == CardEffectTargetSelectionType.Tech &&

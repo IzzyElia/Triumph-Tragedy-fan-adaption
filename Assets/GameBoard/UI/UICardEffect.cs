@@ -58,6 +58,12 @@ namespace GameBoard.UI
             //Handled by UICardHand
         }
 
+        private void OnEnable()
+        {
+            transform.localScale = Vector3.one;
+            transform.localRotation = Quaternion.Euler(Vector3.zero);
+        }
+
         public override void UIUpdate()
         {
             
@@ -71,5 +77,7 @@ namespace GameBoard.UI
                 backgroundImage.color = baseColor;
             }
         }
+
+        public abstract void OnDroppedOnPanel();
     }
 }

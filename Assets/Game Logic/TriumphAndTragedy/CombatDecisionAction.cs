@@ -4,7 +4,6 @@ using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using Izzy.ForcedInitialization;
 using Unity.Collections;
-using UnityEngine;
 
 namespace Game_Logic.TriumphAndTragedy
 {
@@ -20,7 +19,6 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override void Execute()
         {
-            Debug.Log("Attempting combat action...");
             GameState.ActiveCombat.RollCombatAtCurrentInitiative(_diceDistribution);
         }
 
@@ -78,7 +76,7 @@ namespace Game_Logic.TriumphAndTragedy
                 return (false, "Too many dice assigned");
             foreach (var cadre in cadres)
             {
-                if (cadre.IFaction.ID == iPlayerFaction)
+                if (cadre.IFaction != null && cadre.IFaction.ID == iPlayerFaction)
                 {
                     // TODO validate dice counts match unit counts
                 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{bddec354-a3f1-455d-9bc7-79e7da7ae89a}">
+		<property name="assetPath">
+			<value>Bullet Hits/zapsplat_warfare_several_bullets_hit_ground_dirt_fast_43624.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>3.9119999999999999</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{347473ac-7ab8-4273-ad17-cc1188610217}</destination>
+		</relationship>
+	</object>
+</objects>

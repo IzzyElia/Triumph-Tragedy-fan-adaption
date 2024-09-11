@@ -14,17 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   style: 2
   BaseEffects:
-  - MinNumber: 3
-    MaxNumber: 5
+  - MinNumber: 0
+    MaxNumber: 0
     unitPrefabs:
     - {fileID: 5543479812009275168, guid: 303f95d54200442a9aa39dcd23860e64, type: 3}
+    - {fileID: 5543479812009275168, guid: 3427df44761384847aef02ba3918495f, type: 3}
   PerUnitEffects:
-  - MinNumber: 2
-    MaxNumber: 3
+  - MinNumber: 1
+    MaxNumber: 2
     unitPrefabs:
     - {fileID: 5543479812009275168, guid: 303f95d54200442a9aa39dcd23860e64, type: 3}
-  SpawnBoxPosition: {x: -30, y: 0, z: 0}
-  SpawnBoxSize: {x: 15, y: 5, z: 0}
-  DestinationBoxPosition: {x: -20, y: 0, z: 0}
+    - {fileID: 5543479812009275168, guid: 3427df44761384847aef02ba3918495f, type: 3}
+  SpawnBoxPosition: {x: -20, y: 0, z: 100}
+  SpawnBoxSize: {x: 30, y: 8, z: 0}
+  DestinationBoxPosition: {x: -20, y: 0, z: 100}
   DestinationBoxSize: {x: 15, y: 5, z: 0}
   NearCameraPosition: {x: 40, y: 0, z: -15}
+  baseAnimationTime: 3
+  animationTimePerUnit: 1

@@ -62,11 +62,8 @@ namespace GameBoard
             get => pipsManager.pips;
             set
             {
-                if (value != pipsManager.pips)
-                {
-                    pipsManager.SetPips(value);
-                    RecalculateAppearance();
-                }
+                pipsManager.SetPips(value);
+                RecalculateAppearance();
             }
         }
         public int ProjectedPips
@@ -86,11 +83,8 @@ namespace GameBoard
             get => pipsManager.maxPips;
             set
             {
-                if (value != pipsManager.maxPips)
-                {
-                    pipsManager.SetMaxPips(value);
-                    RecalculateAppearance();
-                }
+                pipsManager.SetMaxPips(value);
+                RecalculateAppearance();
             }
         }
 
@@ -350,6 +344,7 @@ namespace GameBoard
         public Color supportHighlightColor;
         public virtual void RecalculateAppearance()
         {
+            if (!Map.GameState.IsSynced) return;
             meshFilter.sharedMesh = Map.CadreBlockMesh;
             transform.localScale = new Vector3(ActualScale, ActualScale, ZSize);
             if (MapCountry is not null)
@@ -361,7 +356,7 @@ namespace GameBoard
                 meshRenderer.material.SetColor("_BaseColor", Color.gray);
             else meshRenderer.material.SetColor("_BaseColor", Color.white);
 
-            if (Map.SelectedObjects.Contains(this) || Map.HoveredMapObject == this)
+            if (Map.SelectedObject == this || Map.HoveredMapObject == this)
             {
                 meshRenderer.material.SetColor("_HighlightColor", highlightColor);
                 if (Map.GameState.GamePhase == GamePhase.Production &&

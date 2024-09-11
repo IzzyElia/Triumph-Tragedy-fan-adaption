@@ -27,6 +27,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4000
+--- !u!114 &-6551742173462468182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Tank
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Tank
+  Guid:
+    Data1: 1863103949
+    Data2: 1131105241
+    Data3: -142538109
+    Data4: -2107128639
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4000
 --- !u!114 &-6040111891719305841
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54,6 +81,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2950
+--- !u!114 &-5117339629663698515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Combat/Driving Tank
+  m_EditorClassIdentifier: 
+  Path: event:/Combat/Driving Tank
+  Guid:
+    Data1: 1102497660
+    Data2: 1231625224
+    Data3: -1948951924
+    Data4: -380270273
+  Banks:
+  - {fileID: 4867460872726476762}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 25632
 --- !u!114 &-4846165572716826438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -130,13 +184,41 @@ MonoBehaviour:
   - {fileID: -4846165572716826438}
   - {fileID: 8569728604144720511}
   - {fileID: 3707852495227933053}
+  - {fileID: -6551742173462468182}
+  - {fileID: -5117339629663698515}
   EditorParameters: []
   MasterBanks:
   - {fileID: 4867460872726476762}
   StringsBanks:
   - {fileID: 6567630132427840368}
-  cacheTime: 638574324000489935
+  cacheTime: 638575088597434052
   cacheVersion: 131618
+--- !u!114 &1960682283665668266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Bullet Hit/HitStatus
+  m_EditorClassIdentifier: 
+  Name: HitStatus
+  StudioPath: 
+  Min: 0
+  Max: 1
+  Default: 1
+  ID:
+    data1: 3580649414
+    data2: 3732878213
+  Type: 2
+  IsGlobal: 0
+  Labels:
+  - Hit
+  - Miss
+  Exists: 1
 --- !u!114 &3707852495227933053
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -158,12 +240,13 @@ MonoBehaviour:
   Banks:
   - {fileID: 4867460872726476762}
   IsStream: 0
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 1
-  Parameters: []
+  Parameters:
+  - {fileID: 1960682283665668266}
   MinDistance: 1
   MaxDistance: 20
-  Length: 500
+  Length: 2740
 --- !u!114 &4867460872726476762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -179,10 +262,10 @@ MonoBehaviour:
   Path: FModProject/TT/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638574324000438238
+  lastModified: 638575088597392343
   FileSizes:
   - Name: Desktop
-    Value: 395200
+    Value: 850720
   Exists: 1
 --- !u!114 &6567630132427840368
 MonoBehaviour:
@@ -199,10 +282,10 @@ MonoBehaviour:
   Path: FModProject/TT/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638574324000489935
+  lastModified: 638575088597434052
   FileSizes:
   - Name: Desktop
-    Value: 1056
+    Value: 1186
   Exists: 1
 --- !u!114 &8569728604144720511
 MonoBehaviour:
@@ -226,7 +309,7 @@ MonoBehaviour:
   - {fileID: 4867460872726476762}
   IsStream: 0
   Is3D: 1
-  IsOneShot: 0
+  IsOneShot: 1
   Parameters: []
   MinDistance: 1
   MaxDistance: 5

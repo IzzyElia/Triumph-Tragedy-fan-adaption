@@ -2,7 +2,6 @@ using System;
 using GameBoard.UI.SpecializeComponents.GameBoard.UI.SpecializeComponents;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
-using TMPro;
 using UnityEngine;
 
 namespace GameBoard.UI.SpecializeComponents
@@ -17,12 +16,12 @@ namespace GameBoard.UI.SpecializeComponents
             IInvestmentCard investmentCard = gameCard as IInvestmentCard;
 
             
-            int techsHash = 17;
+            int techsHash = investmentCard.FactoryValue.GetHashCode();
             for (int i = 0; i < investmentCard.Techs.Count; i++)
             {
                 unchecked
                 {
-                    techsHash ^= investmentCard.Techs[i].GetHashCode() * 17;
+                    techsHash *= investmentCard.Techs[i].GetHashCode() + 17;
                 }
             }
 
@@ -30,14 +29,32 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 _techsHash = techsHash;
                 ClearCardEffects();
+                InstantiateFactoryEffect(investmentCard.ID);
                 foreach (var iTech in investmentCard.Techs)
                 {
                     Tech tech = GameState.Ruleset.GetTech(iTech);
                     InstantiateTechEffect(tech);
                 }
             }
+            
         }
 
+
+        UICardEffect InstantiateFactoryEffect(int iCard)
+        {
+            try
+            {
+                UIFactoryCardEffect factoryCardEffect = 
+                    (UIFactoryCardEffect)InstantiateCardEffect(CardHand.InvestmentCardFactoryEffectPrefab, isMainEffect:true);
+                factoryCardEffect.SetCardTarget(iCard);
+                return factoryCardEffect;
+            }
+            catch (InvalidCastException e)
+            {
+                Debug.LogError("card prefab does not contain the ui factory effect component");
+                return null;
+            }
+        }
         UITechEffect InstantiateTechEffect(Tech tech)
         {
             try

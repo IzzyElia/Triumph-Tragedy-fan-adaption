@@ -16,6 +16,7 @@ namespace GameSharedInterfaces
 
     public enum FireAndRetreatRule
     {
+        Unspecified,
         Cannot,
         Can
     }
@@ -58,6 +59,7 @@ namespace GameSharedInterfaces
         public bool IsTransportType;
         public Dictionary<string, UnitTypeGraphicsSet> GraphicsSets = new Dictionary<string, UnitTypeGraphicsSet>();
         public UnitModifier[] TechModifiers;
+        public UnitAIScore AIValues;
 
         public UnitType(string name,
             int groundAttack = 0,
@@ -134,7 +136,6 @@ namespace GameSharedInterfaces
                     graphicsSet = new UnitTypeGraphicsSet();
                     unitTypeTexturesByCountry.Add(graphicCountry, graphicsSet);
                 }
-                Debug.Log($"loaded {resources[i].name} as a {typeof(T).Name} for {graphicCountry}");
                 apply.Invoke(resources[i], graphicsSet);
             }
         }
@@ -163,10 +164,10 @@ namespace GameSharedInterfaces
         public Sprite GetCombatPanelSprite(string firstChoiceCountry, string secondChoiceCountry = null)
         {
             UnitTypeGraphicsSet graphicsSet;
-            if (unitTypeTexturesByCountry.TryGetValue(firstChoiceCountry, out graphicsSet) &&
-                    graphicsSet.CombatPanelSceneSprite is not null)
+            if (firstChoiceCountry != null && unitTypeTexturesByCountry.TryGetValue(firstChoiceCountry, out graphicsSet) &&
+                graphicsSet.CombatPanelSceneSprite is not null)
                 return graphicsSet.CombatPanelSceneSprite;
-            else if (unitTypeTexturesByCountry.TryGetValue(secondChoiceCountry, out graphicsSet) &&
+            else if (secondChoiceCountry != null && unitTypeTexturesByCountry.TryGetValue(secondChoiceCountry, out graphicsSet) &&
                      graphicsSet.CombatPanelSceneSprite is not null)
                 return graphicsSet.CombatPanelSceneSprite;
             else
@@ -176,7 +177,7 @@ namespace GameSharedInterfaces
         public EffectDefinition GetCombatEffectDefinition(string firstChoiceCountry, string secondChoiceCountry = null)
         {
             UnitTypeGraphicsSet graphicsSet;
-            if (unitTypeTexturesByCountry.TryGetValue(firstChoiceCountry, out graphicsSet) &&
+            if (firstChoiceCountry != null && unitTypeTexturesByCountry.TryGetValue(firstChoiceCountry, out graphicsSet) &&
                 graphicsSet.CombatEffect is not null)
                 return graphicsSet.CombatEffect;
             else if (secondChoiceCountry != null && unitTypeTexturesByCountry.TryGetValue(secondChoiceCountry, out graphicsSet) &&

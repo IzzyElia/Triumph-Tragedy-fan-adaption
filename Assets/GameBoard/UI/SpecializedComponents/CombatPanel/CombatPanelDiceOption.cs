@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using TMPro;
@@ -42,16 +41,25 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                 case AnimationState.LastFrame:
                     overlay.gameObject.SetActive(false);
                     background.color = _backgroundBaseColor;
-                    break;
+                    increaseButton.color = Color.white;
+                    decreaseButton.color = Color.white;
+                    return;
             }
-            if (animationData.firingTargetType == this.UnitCategory)
+            if (animationData.firingTargetType != this.UnitCategory)
             {
                 const float darkenMod = 0.1f;
                 background.color = new Color(_backgroundBaseColor.r * darkenMod * timeData.DarkenProgress, _backgroundBaseColor.g * darkenMod * timeData.DarkenProgress, _backgroundBaseColor.b * darkenMod * timeData.DarkenProgress, _backgroundBaseColor.a - timeData.DarkenProgress / 2);
+                increaseButton.color = new Color(1 * darkenMod * timeData.DarkenProgress,
+                    1 * darkenMod * timeData.DarkenProgress, 1 * darkenMod * timeData.DarkenProgress,
+                    1 * darkenMod * timeData.DarkenProgress);
+                decreaseButton.color = new Color(1 * darkenMod * timeData.DarkenProgress,
+                    1 * darkenMod * timeData.DarkenProgress, 1 * darkenMod * timeData.DarkenProgress,
+                    1 * darkenMod * timeData.DarkenProgress);
             }
             else
             {
                 background.color = new Color(_backgroundBaseColor.r, _backgroundBaseColor.g, _backgroundBaseColor.b, _backgroundBaseColor.a - timeData.DarkenProgress);
+                increaseButton.color = new Color(1, 1, 1, timeData.DarkenProgress);
             }
         }
 
@@ -70,7 +78,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         {
             // Animation stuff
             
-            if (UIController.CombatPanel.AnimationOngoing) return;
+            if (CombatPanel.AnimationOngoing) return;
             
             // Non-animation stuff
             if (UIController.UIObjectAtPointer == increaseButton.gameObject)

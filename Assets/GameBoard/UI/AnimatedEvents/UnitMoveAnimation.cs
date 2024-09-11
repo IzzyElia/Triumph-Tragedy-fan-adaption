@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace GameBoard.UI.AnimatedEvents
@@ -25,6 +24,7 @@ namespace GameBoard.UI.AnimatedEvents
 
         private float _momentum = 0f;
         private const float _maxMomentum = 0.05f;
+        private bool _loggedMissingReference = false;
         protected override AnimationState OnStep(float deltaTime)
         {
             if (_momentum < _maxMomentum)
@@ -36,17 +36,35 @@ namespace GameBoard.UI.AnimatedEvents
             for (int i = 0; i < _cadres.Length; i++)
             {
                 MapCadre cadre = _cadres[i];
-                cadre.transform.position = Vector3.Lerp(cadre.transform.position, cadre.Destination, _momentum);
-                if (Vector3.Distance(cadre.transform.position, cadre.Destination) > 0.01f)
-                    allCadresCloseEnough = false;
+                try
+                {
+                    if (cadre is null) continue;
+                    cadre.transform.position = Vector3.Lerp(cadre.transform.position, cadre.Destination, _momentum);
+                    if (Vector3.Distance(cadre.transform.position, cadre.Destination) > 0.01f)
+                        allCadresCloseEnough = false;
+                }
+                catch (MissingReferenceException e)
+                {
+                    if (!_loggedMissingReference) Debug.LogWarning("Missing reference exception in unit animation");
+                    _loggedMissingReference = true;
+                    _cadres[i] = null;
+                }
             }
 
             if (allCadresCloseEnough)
             {
                 for (int i = 0; i < _cadres.Length; i++)
                 {
-                    _cadres[i].transform.position = _cadres[i].Destination;
-                    _cadres[i].AnimatingMovement = false;
+                    try
+                    {
+                        if (_cadres[i] is null) continue;
+                        _cadres[i].transform.position = _cadres[i].Destination;
+                        _cadres[i].AnimatingMovement = false;
+                    }
+                    catch (MissingReferenceException e)
+                    {
+                        continue; // Missing reference warning logged above
+                    }
                 }
 
                 return AnimationState.Exit;

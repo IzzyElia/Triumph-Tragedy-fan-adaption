@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 using Unity.Collections;
 
 namespace Game_Logic.TriumphAndTragedy
@@ -140,12 +141,12 @@ namespace Game_Logic.TriumphAndTragedy
         {
             if (IsVisibleToPlayer(asPlayer))
             {
-                int hash = HashCode.Combine(base.HashFullState(asPlayer), Initiative, NumActions, Season);
+                int hash = Hashing.MurmurHash3_Combine(base.HashFullState(asPlayer), Initiative, NumActions, (int)Season);
                 unchecked
                 {
                     for (int i = 0; i < Countries.Count; i++)
                     {
-                        hash *= Countries[i].GetHashCode();
+                        hash *= Hashing.MurmurHash3(Countries[i]);
                     }
                     for (int i = 0; i < SpecialDiplomacyActions.Count; i++)
                     {
@@ -160,6 +161,11 @@ namespace Game_Logic.TriumphAndTragedy
                 int hash = base.HashFullState(asPlayer);
                 return hash;
             }
+        }
+
+        public override void RefreshMapState()
+        {
+            
         }
 
 

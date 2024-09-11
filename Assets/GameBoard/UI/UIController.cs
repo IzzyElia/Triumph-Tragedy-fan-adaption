@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GameBoard.MapMarkers;
 using GameBoard.UI.SpecializeComponents;
 using GameBoard.UI.SpecializeComponents.CombatPanel;
+using GameBoard.UI.SpecializedComponents;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
@@ -45,8 +45,8 @@ namespace GameBoard.UI
             uiController.inputType = InputType.Mouse;
             
             // Setup actions
-            uiController.MovementAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("MoveUnits");
-            uiController.InitialPlacementAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("BuildInitialUnits");
+            uiController.MovementAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CommandsAction");
+            uiController.InitialPlacementAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("InitialUnitsAction");
             uiController.ProductionAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("ProductionAction");
             uiController.CardplayAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CardplayAction");
             uiController.CombatAction = mapRenderer.GameState.GenerateClientsidePlayerActionByName("CombatDecisionAction");
@@ -69,8 +69,10 @@ namespace GameBoard.UI
         [NonSerialized] public UIPlayerStartTurnPanel PlayerStartTurnScreen;
         [NonSerialized] public DebugTextbox DebugTextbox;
         [NonSerialized] public UICardPlayArea CardPlayArea;
-        [NonSerialized] public CombatSelectionWindow CombatSelectionWindow;
+        [NonSerialized] public UICombatSelectionWindow CombatSelectionWindow;
+        [NonSerialized] public UIDiploPanel DiploPanel;
         [NonSerialized] public CombatPanel CombatPanel;
+        [NonSerialized] public UINotificationText NotificationText;
         [NonSerialized] public Map MapRenderer;
         public InputType inputType;
         public Camera mainCamera;
@@ -105,7 +107,12 @@ namespace GameBoard.UI
         public float DeltaDragSincePointerPressed { get; private set; }
         public const float DragVsClickThreshold = 25;
         private bool MultipleMapObjectSelectionsAllowed => GameState.GamePhase == GamePhase.SelectSupport || GameState.GamePhase == GamePhase.GiveCommands;
-        public List<MapObject> SelectedMapObjects => MapRenderer.SelectedObjects;
+
+        public MapObject SelectedMapObject
+        {
+            get => MapRenderer.SelectedObject;
+            set => MapRenderer.SelectedObject = value;
+        }
         public List<MapObject> ScrubQueue { get; private set; } = new List<MapObject>();
         public bool SelectionChanged = false;
         public MapObject HoveredMapObject
@@ -143,8 +150,19 @@ namespace GameBoard.UI
         public Canvas Canvas;
         public bool Initialized = false;
 
+        private void Awake()
+        {
+            GameObject playerUIPrefab = Resources.Load<GameObject>("PlayerUI");
+            if (playerUIPrefab is null) throw new InvalidOperationException($"Could not find the PlayerUI prefab");
+            GameObject canvasObject = GameObject.Find("Main Canvas");
+            if (canvasObject is null) throw new InvalidOperationException("Could not find the main canvas. Make sure there is a canvas in the scene and its name is 'Main Canvas'");
+            this.Canvas = canvasObject.GetComponent<Canvas>();
+            RootUIObject = Instantiate(playerUIPrefab, canvasObject.transform);
+        }
+
         private void Start()
         {
+            Debug.Log("Started UI Controller");
             //Load Resources
             unitGhostPrefab = Resources.Load<GameObject>("Prefabs/CadreGhost");
             uiIconMaterial = Resources.Load<Material>("Shaders/UI/UIIcon");
@@ -152,17 +170,13 @@ namespace GameBoard.UI
             // Connect objects
             if (mainCamera is null) throw new InvalidOperationException("UIController not hooked up to a camera");
             GameObject canvasObject = GameObject.Find("Main Canvas");
-            if (canvasObject is null) throw new InvalidOperationException("Could not find the main canvas. Make sure there is a canvas in the scene and its name is 'Main Canvas'");
-            this.Canvas = canvasObject.GetComponent<Canvas>();
-            
-            GameObject playerUIPrefab = Resources.Load<GameObject>("PlayerUI");
-            if (playerUIPrefab is null) throw new InvalidOperationException($"Could not find the PlayerUI prefab");
+
             
             // Create UI and register UI Components found in the prefab
-            RootUIObject = Instantiate(playerUIPrefab, canvasObject.transform);
             UIWrapperController wrapperController = RootUIObject.GetComponent<UIWrapperController>();
             if (wrapperController is null) throw new InvalidOperationException("Root player ui object should have a UIWrapperController attached");
             wrapperController.UIController = this;
+            
             foreach (var uiComponent in RootUIObject.GetComponentsInChildren<UIComponent>(includeInactive:true))
             {
                 RegisterUIComponent(uiComponent);
@@ -179,8 +193,10 @@ namespace GameBoard.UI
             ProductionInfoWindow = GetUIComponent<UIProductionInfo>("Production Info Window");
             CommandsInfoWindow = GetUIComponent<UICommandsInfo>("Commands Info Window");
             PlayerStartTurnScreen = GetUIComponent<UIPlayerStartTurnPanel>("Start Turn Screen");
-            CombatSelectionWindow = GetUIComponent<CombatSelectionWindow>("Combat Selection Window");
+            CombatSelectionWindow = GetUIComponent<UICombatSelectionWindow>("Combat Selection Window");
+            DiploPanel = GetUIComponent<UIDiploPanel>("Diplo Panel");
             CombatPanel = GetUIComponent<CombatPanel>("Combat Panel");
+            NotificationText = GetUIComponent<UINotificationText>("Notification Text");
             
             Initialized = true;
         }
@@ -210,7 +226,7 @@ namespace GameBoard.UI
         {
             foreach (var destroyedObject in ScrubQueue)
             {
-                SelectedMapObjects.Remove(destroyedObject);
+                if (SelectedMapObject == destroyedObject) SelectedMapObject = null;
                 if (PrevHoveredOverTile == destroyedObject) PrevHoveredOverTile = null;
                 if (PrevHoveredMapObject == destroyedObject) PrevHoveredOverTile = null;
                 if (HoveredMapObject == destroyedObject) HoveredMapObject = null;
@@ -236,6 +252,17 @@ namespace GameBoard.UI
             
             RecalculateUserInputValues();
 
+            // TODO Generalizable keyboard input system (this + camera panning)
+            for (int i = 1; i <= 9; i++)
+            {
+                if (Input.GetKeyDown((KeyCode)Enum.Parse(typeof(KeyCode), "Alpha" + i.ToString())))
+                {
+                    MapMode mapMode = (MapMode)i-1;
+                    MapRenderer.SetMapMode(mapMode);
+                    break;
+                }
+            }
+
             // OnResyncEnded is called before OnGamestateChanged, as it may be order dependant
             // (ie OnResyncEnded usually reconstructs the skeleton of the object
             // while OnGamestateChanged applies values to that skeleton)
@@ -245,16 +272,19 @@ namespace GameBoard.UI
                 foreach (var uiComponent in new List<UIComponent>(_uiComponents))
                 {
                     uiComponent.OnResyncEnded();
+                    if (uiComponent is UIWindow window)
+                    {
+                        window.SetActive(window.WantsToBeActive);
+                    }
                 }
-
                 UnresolvedResync = false;
                 GamestateChangedThisUpdate = true;
             }
-            if (UnresolvedStateChange && GameState.IsSynced && RootUIObject.activeSelf)
+            if ((UnresolvedStateChange || SelectionChanged) && GameState.IsSynced && RootUIObject.activeSelf)
             {
                 foreach (var uiComponent in new List<UIComponent>(_uiComponents))
                 {
-                    uiComponent.OnGamestateChanged();
+                    if (UnresolvedStateChange) uiComponent.OnGamestateChanged();
                     if (uiComponent is UIWindow window)
                     {
                         if (window.Active && !window.WantsToBeActive) window.SetActive(false);
@@ -271,7 +301,8 @@ namespace GameBoard.UI
             // Call all other UIComponent updates
             foreach (var uiComponent in new List<UIComponent>(_uiComponents))
             {
-                uiComponent.UIUpdate();
+                // TODO make sure this didn't break anything
+                if (uiComponent.gameObject.activeInHierarchy) uiComponent.UIUpdate();
             }
             
             MovementUpdate();
@@ -392,36 +423,54 @@ namespace GameBoard.UI
                 if (tileAtCursor is null) HoveredOverTile = null;
                 else HoveredOverTile = tileAtCursor.GetComponent<MapTile>();
 
-                if (nonTileObjectAtCursor is null) HoveredMapObject = null;
-                else HoveredMapObject = nonTileObjectAtCursor.GetComponent<MapObject>();
+                if (nonTileObjectAtCursor is not null)
+                {
+                    HoveredMapObject = nonTileObjectAtCursor.GetComponent<MapObject>();
+                }
+                else if (HoveredOverTile is not null)
+                {
+                    HoveredMapObject = HoveredOverTile;
+                }
+                else
+                {
+                    HoveredMapObject = null;
+                }
+
+                //if (nonTileObjectAtCursor is null) HoveredMapObject = null;
+                //else HoveredMapObject = nonTileObjectAtCursor.GetComponent<MapObject>();
             }
             
             if (PointerInputStatus == InputStatus.Pressed && !PointerIsOverUI)
             {
-                if (!MultipleMapObjectSelectionsAllowed)
-                {
-                    foreach (var mapObject in SelectedMapObjects) mapObject.OnSelectionStatusChanged(SelectionStatus.Unselected);
-                    SelectedMapObjects.Clear();
-                    SelectionChanged = true;
-                }
+                MapObject prevSelectedMapObject = SelectedMapObject;
 
                 if (HoveredMapObject is not null)
                 {
-                    if (SelectedMapObjects.Contains(HoveredMapObject))
+                    if (SelectedMapObject == HoveredMapObject)
                     {
-                        SelectedMapObjects.Remove(HoveredMapObject);
-                        HoveredMapObject.OnSelectionStatusChanged(SelectionStatus.Unselected);
+                        SelectedMapObject = null;
                         SelectionChanged = true;
                     }
                     else
                     {
                         if (HoveredMapObject.IsSelectable)
                         {
-                            SelectedMapObjects.Add(HoveredMapObject);
+                            SelectedMapObject = HoveredMapObject;
                             HoveredMapObject.OnSelectionStatusChanged(SelectionStatus.Selected);
                             SelectionChanged = true;
                         }
+                        else
+                        {
+                            SelectedMapObject = null;
+                            SelectionChanged = true;
+                        }
                     }
+                }
+
+                if (SelectionChanged)
+                {
+                    if (prevSelectedMapObject is not null) prevSelectedMapObject.OnSelectionStatusChanged(SelectionStatus.Unselected);
+                    MapRenderer.RecalculateMapMode();
                 }
             }
 
@@ -494,7 +543,7 @@ namespace GameBoard.UI
         {
             if (isActive && !ActiveLocally && GameState.GamePhase != GamePhase.Combat)
             {
-                PlayerStartTurnScreen.Setup(PlayerMapFaction);
+                PlayerStartTurnScreen.Setup(PlayerMapFaction); // Uncomment to reenable start screens
             }
             
             ActiveLocally = isActive;
@@ -630,8 +679,13 @@ namespace GameBoard.UI
 
         public void Dispose()
         {
+            foreach (var uiComponent in new List<UIComponent>(_uiComponents))
+            {
+                uiComponent.DestroyUIComponent();
+            }
             Destroy(RootUIObject);
             Destroy(this.gameObject);
+            Destroy(this);
         }
     }
 }

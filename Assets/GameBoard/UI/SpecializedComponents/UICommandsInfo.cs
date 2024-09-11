@@ -1,5 +1,4 @@
 using GameSharedInterfaces;
-using GameSharedInterfaces.Triumph_and_Tragedy;
 using TMPro;
 using UnityEngine;
 

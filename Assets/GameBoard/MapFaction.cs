@@ -8,14 +8,17 @@ namespace GameBoard
 {
     public class MapFaction : MapObject
     {
-        public static MapFaction Create(string name, Map map, int id)
+        public static MapFaction Create(string name, Map map, int id, string ideologyName)
         {
             MapFaction mapFaction = new GameObject(name, typeof(MapFaction)).GetComponent<MapFaction>();
             mapFaction.ID = id;
+            mapFaction.IdeologyName = ideologyName;
             mapFaction.RegisterTo(map);
             mapFaction.transform.SetParent(map.countriesWrapper.transform);
             return mapFaction;
         }
+
+        public string IdeologyName;
         public List<StartingUnitInfo> startingUnits = new List<StartingUnitInfo>();
         [NonSerialized] public List<SpecialStartingUnitInfo> startingSpecialUnits = new List<SpecialStartingUnitInfo>();
         public MapCountry leader;
@@ -25,7 +28,7 @@ namespace GameBoard
             List<MapCountry> members = new List<MapCountry>();
             foreach (var mapCountry in Map.MapCountriesByID)
             {
-                if (mapCountry.faction == this) members.Add(mapCountry);
+                if (mapCountry.Faction == this) members.Add(mapCountry);
             }
 
             return members;

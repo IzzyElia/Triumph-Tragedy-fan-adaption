@@ -12,5 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e677074d9f349559240628e14ea0e16, type: 3}
   m_Name: Tank
   m_EditorClassIdentifier: 
-  effectPrefabs: []
   style: 2
+  BaseEffects:
+  - MinNumber: 0
+    MaxNumber: 0
+    unitPrefabs:
+    - {fileID: 5543479812009275168, guid: a96200d679f69464e928a45447e3f572, type: 3}
+    - {fileID: 5543479812009275168, guid: 780fc90916caf442bb9694f194e42793, type: 3}
+  PerUnitEffects:
+  - MinNumber: 1
+    MaxNumber: 1
+    unitPrefabs:
+    - {fileID: 5543479812009275168, guid: a96200d679f69464e928a45447e3f572, type: 3}
+    - {fileID: 5543479812009275168, guid: 780fc90916caf442bb9694f194e42793, type: 3}
+  SpawnBoxPosition: {x: -25, y: 0, z: 0}
+  SpawnBoxSize: {x: 50, y: 8, z: 0}
+  DestinationBoxPosition: {x: 0, y: 0, z: 0}
+  DestinationBoxSize: {x: 0, y: 0, z: 0}
+  NearCameraPosition: {x: 150, y: 0, z: 0}
+  baseAnimationTime: 3
+  animationTimePerUnit: 1

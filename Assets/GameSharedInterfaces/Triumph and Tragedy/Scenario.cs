@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 namespace GameSharedInterfaces.Triumph_and_Tragedy
@@ -39,6 +38,9 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
     public class Scenario : ScriptableObject
     {
         // Basic scenario properties
+        public string scenarioDisplayName;
+        public Sprite scenarioThumbnail;
+        public string mapName;
         public int startYear;
         public List<Faction> factions;
 
@@ -50,10 +52,14 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         [Serializable] public class Faction
         {
             public string name;
+            public string Ideology;
+            public int startingIndustry;
+            public int startingCards;
+            public int handLimit;
+            public int emergencyCommandMoves;
             public List<string> countries = new List<string>();
             public List<StartingUnitInfo> startingUnits = new List<StartingUnitInfo>();
             public List<SpecialStartingUnitInfo> startingSpecialUnits = new List<SpecialStartingUnitInfo>();
-            public int startingIndustry;
             public string leader => countries.Count > 0 ? countries[0] : null;
         }
     }

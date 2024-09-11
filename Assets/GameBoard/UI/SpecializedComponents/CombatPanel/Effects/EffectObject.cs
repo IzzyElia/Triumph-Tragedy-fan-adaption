@@ -1,4 +1,3 @@
-using System;
 using GameBoard.UI.SpecializeComponents.CombatPanel;
 using UnityEngine;
 
@@ -6,9 +5,9 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
 {
     public abstract class EffectObject : MonoBehaviour
     {
-        [NonSerialized] protected float StartTime;
-        [NonSerialized] protected CombatAnimationData AnimationData;
-        [NonSerialized] protected CombatPanelEffect CombatPanelEffect;
+        protected float StartTime;
+        protected CombatAnimationData AnimationData;
+        protected CombatPanelEffect CombatPanelEffect;
 
         public virtual void OnCreate(CombatPanelEffect combatPanelEffect, CombatAnimationData animationData, AnimationTimeData timeData)
         {

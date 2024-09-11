@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using GameLogic;
 using GameSharedInterfaces;
 using Izzy.ForcedInitialization;
-using PlasticGui.Help;
 using Unity.Collections;
 using UnityEngine;
 
@@ -72,7 +70,7 @@ namespace Game_Logic.TriumphAndTragedy
             }
             else
             {
-                GameState.AdvanceTurnMarker();
+                GameState.AdvanceTurnMarkerAndReturnTrueIfAllPlayersWent();
             }
             GameState.PushGlobalFields();
         }

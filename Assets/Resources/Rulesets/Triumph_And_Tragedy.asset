@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   unitPlacementRule: 1
   CombatDamageRule: 1
+  CombatSupportRule: 2
   maxCadrePips: 4
   TechMatchesRequiredForTechUpgrade: 2
   techs:
@@ -43,6 +44,15 @@ MonoBehaviour:
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 0
+      airCombatScore: 0
+      seaCombatScore: 0
+      mobilityFactor: 0
+      landCaptureFactor: 0
+      navelInvasionShockPower: 0
+      groundInterdictionScore: 0
+      navelInterdictionScore: 0
   - Name: AirForce
     GroundAttack: 1
     SeaAttack: 1
@@ -53,13 +63,22 @@ MonoBehaviour:
     RedeploymentMovement: 4
     Category: 3
     RebaseRule: 3
-    FireAndRetreatRule: 0
+    FireAndRetreatRule: 1
     HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 1.5
+      airCombatScore: 3.5
+      seaCombatScore: 1.5
+      mobilityFactor: 3
+      landCaptureFactor: 0
+      navelInvasionShockPower: 1.5
+      groundInterdictionScore: 0
+      navelInterdictionScore: 0
   - Name: Submarine
     GroundAttack: 0
     SeaAttack: 1
@@ -70,13 +89,22 @@ MonoBehaviour:
     RedeploymentMovement: 0
     Category: 4
     RebaseRule: 3
-    FireAndRetreatRule: 0
+    FireAndRetreatRule: 1
     HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 0
+      airCombatScore: 0
+      seaCombatScore: 1.5
+      mobilityFactor: 1.5
+      landCaptureFactor: 0
+      navelInvasionShockPower: 0.3
+      groundInterdictionScore: 0
+      navelInterdictionScore: 1.5
   - Name: Fleet
     GroundAttack: 1
     SeaAttack: 3
@@ -87,13 +115,22 @@ MonoBehaviour:
     RedeploymentMovement: 0
     Category: 2
     RebaseRule: 3
-    FireAndRetreatRule: 0
+    FireAndRetreatRule: 1
     HasFirstFire: 0
     TakesDoubleHits: 0
     IsFortress: 0
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 1.5
+      airCombatScore: 0.6
+      seaCombatScore: 3
+      mobilityFactor: 2
+      landCaptureFactor: 0
+      navelInvasionShockPower: 1.5
+      groundInterdictionScore: 0
+      navelInterdictionScore: 1
   - Name: Tank
     GroundAttack: 2
     SeaAttack: 0
@@ -111,6 +148,15 @@ MonoBehaviour:
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 2.5
+      airCombatScore: 0
+      seaCombatScore: 0
+      mobilityFactor: 2.5
+      landCaptureFactor: 1
+      navelInvasionShockPower: 0
+      groundInterdictionScore: 2.5
+      navelInterdictionScore: 0
   - Name: Infantry
     GroundAttack: 3
     SeaAttack: 1
@@ -128,6 +174,15 @@ MonoBehaviour:
     IsBuildableThroughNormalPlacementRules: 1
     IsTransportType: 0
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 3
+      airCombatScore: 0.7
+      seaCombatScore: 0.4
+      mobilityFactor: 1.8
+      landCaptureFactor: 1
+      navelInvasionShockPower: 0
+      groundInterdictionScore: 1.5
+      navelInterdictionScore: 0
   - Name: Convoy
     GroundAttack: 0
     SeaAttack: 0
@@ -145,4 +200,13 @@ MonoBehaviour:
     IsBuildableThroughNormalPlacementRules: 0
     IsTransportType: 1
     TechModifiers: []
+    AIValues:
+      groundCombatScore: 0
+      airCombatScore: 0
+      seaCombatScore: 0
+      mobilityFactor: 0
+      landCaptureFactor: 0
+      navelInvasionShockPower: 0
+      groundInterdictionScore: 0
+      navelInterdictionScore: 0
   specialDiplomacyActionDefinitions: []

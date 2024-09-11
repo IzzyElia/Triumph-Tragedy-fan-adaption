@@ -1,6 +1,9 @@
 using System;
 using GameBoard;
 using GameLogic;
+using GameSharedInterfaces;
+using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 using Unity.Collections;
 using UnityEngine;
 
@@ -9,6 +12,11 @@ namespace Game_Logic.TriumphAndTragedy
     
     public class GameCountry : GameEntity
     {
+        public string InternalName; // The name used for etc finding game resources
+        public string DisplayName => InternalName; // The name actually shown to the player
+        public int iCapital;
+        public GameTile Capital => iCapital == -1 ? null : GameState.GetEntity<GameTile>(iCapital);
+        public ProjectedMembershipStatus FactionProjection = default;
         public MapCountry MapCountry
         {
             get
@@ -24,41 +32,28 @@ namespace Game_Logic.TriumphAndTragedy
         {
             get
             {
-                switch (AppliedInfluence)
-                {
-                    case 0: return FactionMembershipStatus.Unaligned;
-                    case 1: return FactionMembershipStatus.Associate;
-                    case 2: return FactionMembershipStatus.Protectorate;
-                    case >= 3: return FactionMembershipStatus.Ally;
-                    case -1: return FactionMembershipStatus.InitialMember;
-                    default: throw new ArgumentOutOfRangeException();
-                }
+                return TTUtilityFunctions.InfluenceToMembershipStatus(AppliedInfluence);
             }
             set
             {
-                switch (value)
-                {
-                    case FactionMembershipStatus.Unaligned:
-                        AppliedInfluence = 0;
-                        break;
-                    case FactionMembershipStatus.Associate:
-                        AppliedInfluence = 1;
-                        break;
-                    case FactionMembershipStatus.Protectorate:
-                        AppliedInfluence = 2;
-                        break;
-                    case FactionMembershipStatus.Ally:
-                        AppliedInfluence = 3;
-                        break;
-                    case FactionMembershipStatus.InitialMember:
-                        AppliedInfluence = -1;
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
+                AppliedInfluence = TTUtilityFunctions.MembershipStatusToInfluence(value);
             }
         }
         public int iFaction = -1;
+
+        public GameFaction AssociatedFaction
+        {
+            get
+            {
+                if (iColonialOverlord != -1)
+                {
+                    return ColonialOverlord.AssociatedFaction;
+                }
+                else if (iFaction >= 0)
+                    return ((TTGameState)GameState).GetEntity<GameFaction>(iFaction);
+                else return null; // neutral
+            }
+        }
         public GameFaction Faction
         {
             get
@@ -67,9 +62,9 @@ namespace Game_Logic.TriumphAndTragedy
                 {
                     return ColonialOverlord.Faction;
                 }
-                else if (iFaction >= 0)
+                else if (iFaction >= 0 && TTUtilityFunctions.IsFullMember(MembershipStatus))
                     return ((TTGameState)GameState).GetEntity<GameFaction>(iFaction);
-                else return null;
+                else return null; // neutral
             }
         }
         
@@ -80,22 +75,26 @@ namespace Game_Logic.TriumphAndTragedy
             get
             {
                 if (iColonialOverlord >= 0)
-                    return ((TTGameState)GameState).GetOrCreateEntity<GameCountry>(iColonialOverlord);
+                    return ((TTGameState)GameState).GetEntity<GameCountry>(iColonialOverlord);
                 else
                     return null;
             }
         }
-
         public bool IsColony => iColonialOverlord != -1;
-        
-        public void ApplyToMap()
+        public bool IsNeutral => Faction == null && !IsColony;
+
+        public int CalculateLargestCitySize()
         {
-            if (GameState.IsServer) return;
-            if (MapRenderer is null) return;
-            GameState.NetworkMember.NetworkingLog($"Applying Country State for {MapCountry.name}", DebuggingLevel.IndividualMessages);
-            if (MapCountry is null) throw new InvalidOperationException("No map country corresponding to game country with id {ID}");
-            MapCountry.SetFaction(iFaction, MembershipStatus);
-            MapCountry.SetColonialOverlord(iColonialOverlord);
+            int largestCitySize = 0;
+            foreach (var gameTile in GameState.GetEntitiesOfType<GameTile>())
+            {
+                if (gameTile.Country == this)
+                {
+                    largestCitySize = Mathf.Max(largestCitySize, gameTile.CitySize);
+                }
+            }
+
+            return largestCitySize;
         }
         
         protected override void ReceiveCustomUpdate(ref DataStreamReader incomingMessage, byte header)
@@ -103,23 +102,45 @@ namespace Game_Logic.TriumphAndTragedy
             throw new System.NotImplementedException();
         }
 
+        
         protected override void ReceiveFullState(ref DataStreamReader incomingMessage)
         {
+            InternalName = incomingMessage.ReadFixedString64().ToString();
+            iCapital = incomingMessage.ReadInt();
             iFaction = incomingMessage.ReadInt();
             iColonialOverlord = incomingMessage.ReadInt();
             AppliedInfluence = incomingMessage.ReadShort();
+            
             int influencePlayedByPlayerLength = (int)incomingMessage.ReadByte();
             influencePlayedByPlayer = new int[influencePlayedByPlayerLength];
             for (int i = 0; i < influencePlayedByPlayerLength; i++)
             {
                 influencePlayedByPlayer[i] = incomingMessage.ReadShort();
             }
-            if (iFaction != -1 && iColonialOverlord != -1) Debug.LogError($"{MapCountry.name} has both a colonial overlord {MapCountry.colonialOverlord.name} and belongs to a faction {MapCountry.faction.name}. This should not happen");
-            ApplyToMap();
+            if (iFaction != -1 && iColonialOverlord != -1) Debug.LogError($"{MapCountry.name} has both a colonial overlord {MapCountry.colonialOverlord.name} and belongs to a faction {MapCountry.associatedFaction.name}. This should not happen");
+            ((TTGameState)GameState).needsProjectionUpdate = true;
+            if (GameState.NetworkMember.GameStarted && GameState.IsSynced) RefreshMapState();
+        }
+
+        public override void RefreshMapState()
+        {
+            if (((TTGameState)GameState).needsProjectionUpdate) ((TTGameState)GameState).CalculateProjectedMembershipStatus();
+            if (GameState.IsServer) return;
+            if (MapRenderer is null) return;
+            GameState.NetworkMember.NetworkingLog($"Applying Country State for {MapCountry.name}", DebuggingLevel.IndividualMessages);
+            if (MapCountry is null) throw new InvalidOperationException("No map country corresponding to game country with id {ID}");
+            MapCountry.InternalName = InternalName;
+            MapCountry.DisplayName = DisplayName;
+            MapCountry.SetFaction(FactionProjection.iFaction, FactionProjection.MembershipStatus, recalculateTileAppearance:false);
+            MapCountry.SetColonialOverlord(iColonialOverlord);
+            MapCountry.RecalculateTileAppearance();
         }
 
         protected override void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage)
         {
+            if (InternalName == null) InternalName = "unnamed_country";
+            outgoingMessage.WriteFixedString64(InternalName);
+            outgoingMessage.WriteInt(iCapital);
             outgoingMessage.WriteInt(iFaction);
             outgoingMessage.WriteInt(iColonialOverlord);
             outgoingMessage.WriteShort((short)AppliedInfluence);
@@ -132,7 +153,7 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override int HashFullState(int asPlayer)
         {
-            return HashCode.Combine(iFaction, iColonialOverlord);
+            return Hashing.MurmurHash3_Combine(iCapital, iFaction, iColonialOverlord);
         }
 
         protected override void Init()
@@ -150,7 +171,7 @@ namespace Game_Logic.TriumphAndTragedy
                 updatedInfluencePlayedByPlayer[i] = influencePlayedByPlayer[i];
             }
             influencePlayedByPlayer = updatedInfluencePlayedByPlayer;
-            ApplyToMap();
+            if (GameState.NetworkMember.GameStarted) RefreshMapState();
         }
     }
 }

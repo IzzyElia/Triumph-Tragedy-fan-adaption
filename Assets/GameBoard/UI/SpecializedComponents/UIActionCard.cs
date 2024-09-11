@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
@@ -25,7 +24,7 @@ namespace GameBoard.UI.SpecializeComponents
             {
                 unchecked
                 {
-                    actionsHash ^= actionCard.Countries[i].GetHashCode() * 17;
+                    actionsHash *= actionCard.Countries[i].GetHashCode() + 17;
                 }
             }
 

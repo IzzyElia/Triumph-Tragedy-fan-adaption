@@ -14,6 +14,14 @@ namespace GameBoard
         Unselected,
         Dragged
     }
+
+    public enum MapMode
+    {
+        Political,
+        Diplomacy,
+        Supply,
+        Trade,
+    }
     [ExecuteAlways]
     public class Map : MonoBehaviour
     {
@@ -35,6 +43,8 @@ namespace GameBoard
         public AnimationCurve unitMovementAnimationCurve;
         public GameObject mapBorderWrapper;
         public GameObject countriesWrapper;
+        public GameObject mapBackground;
+        public int mapBackgroundSubdivisions;
         private bool _fullRecalculationCalled = false;
         private bool _bordersRecalculationCalled = false;
         private bool _objectListRecalculationCalled = false;
@@ -43,25 +53,276 @@ namespace GameBoard
         public int MaxCadres = byte.MaxValue;
         [NonSerialized] public ITTGameState GameState;
         public Ruleset Ruleset => GameState.Ruleset;
+        public int iPlayer => GameState.iPlayer;
 
         public Mesh CadreBlockMesh;
-        [NonSerialized] public List<MapObject> SelectedObjects = new List<MapObject>(); // Set by UIController
+        [NonSerialized] public MapObject SelectedObject = null; // Set by UIController
         [NonSerialized] public MapObject HoveredMapObject;
         [NonSerialized] public IUIController UIController;
+        public MapMode MapMode { get; private set; }
+        
+        public HashSet<int> GreenlitTiles = new HashSet<int>();
+        public HashSet<int> PrevGreenlitTiles = new HashSet<int>();
+        public Color GreenlitColor = new Color(0.4f, 1f, 0.6f);
+        public HashSet<int> YellowlitTiles = new HashSet<int>();
+        public HashSet<int> PrevYellowlitTiles = new HashSet<int>();
+        public Color YellowlitColor = new Color(1, 0.8f, 0.6f);
+        public HashSet<int> RedlitTiles = new HashSet<int>();
+        public HashSet<int> PrevRedlitTiles = new HashSet<int>();
+        public Color RedlitColor = new Color(0.6f, 0.2f, 0.1f);
+        public HashSet<int> BluelitTiles = new HashSet<int>();
+        public HashSet<int> PrevBluelitTiles = new HashSet<int>();
+        public Color BluelitColor = new Color(0.2f, 0.6f, 0.9f);
+        private HashSet<int> _highlightChangedTiles = new HashSet<int>();
+
+        enum TileHighlightColor
+        {
+            None,
+            Green,
+            Yellow,
+            Red,
+            Blue
+        }
+        
+        void FlushTileHighlighting(Color greenlitColor = default, Color yellowlitColor = default, Color redlitColor = default, Color bluelitColor = default)
+        {
+            PrevGreenlitTiles.Clear();
+            foreach (var tile in GreenlitTiles) PrevGreenlitTiles.Add(tile);
+            GreenlitTiles.Clear();
+            GreenlitColor = greenlitColor;
+
+            PrevYellowlitTiles.Clear();
+            foreach (var tile in YellowlitTiles) PrevYellowlitTiles.Add(tile);
+            YellowlitTiles.Clear();
+            YellowlitColor = yellowlitColor;
+
+            PrevRedlitTiles.Clear();
+            foreach (var tile in RedlitTiles) PrevRedlitTiles.Add(tile);
+            RedlitTiles.Clear();
+            RedlitColor = redlitColor;
+            
+            PrevBluelitTiles.Clear();
+            foreach (var tile in BluelitTiles) PrevBluelitTiles.Add(tile);
+            BluelitTiles.Clear();
+            BluelitColor = bluelitColor;
+            
+            _highlightChangedTiles.Clear();
+        }
+
+        void SetTileHighlightStatus(int iTile, TileHighlightColor highlighState)
+        {
+            switch (highlighState)
+            {
+                case TileHighlightColor.None:
+                    if (PrevGreenlitTiles.Contains(iTile) ||
+                        PrevYellowlitTiles.Contains(iTile) ||
+                        PrevRedlitTiles.Contains(iTile) ||
+                        PrevBluelitTiles.Contains(iTile))
+                    {
+                        _highlightChangedTiles.Add(iTile);
+                    }
+
+                    break;
+                case TileHighlightColor.Green:
+                    if (!PrevGreenlitTiles.Contains(iTile)) _highlightChangedTiles.Add(iTile);
+                    GreenlitTiles.Add(iTile);
+                    break;
+                case TileHighlightColor.Blue:
+                    if (!PrevBluelitTiles.Contains(iTile)) _highlightChangedTiles.Add(iTile);
+                    BluelitTiles.Add(iTile);
+                    
+                    break;
+                case TileHighlightColor.Red:
+                    if (!PrevRedlitTiles.Contains(iTile)) _highlightChangedTiles.Add(iTile);
+                    RedlitTiles.Add(iTile);
+                    break;
+                case TileHighlightColor.Yellow:
+                    if (!PrevYellowlitTiles.Contains(iTile)) _highlightChangedTiles.Add(iTile);
+                    YellowlitTiles.Add(iTile);
+                    break;
+            }
+        }
+        
+        
+        
+        public void SetMapMode(MapMode mapMode)
+        {
+            if (mapMode == MapMode) return;
+            MapMode = mapMode;
+            RecalculateMapMode();
+        }
+
+        public void RecalculateMapMode()
+        {
+            MapTile selectedMapTile = SelectedObject as MapTile;
+            switch (MapMode)
+            {
+                case MapMode.Political:
+                    FlushTileHighlighting();
+                    for (int i = 0; i < MapTilesByID.Length; i++) 
+                        SetTileHighlightStatus(i, TileHighlightColor.None);
+                    // Default map mode. Nothing else needed
+                    break;
+                case MapMode.Diplomacy:
+                    FlushTileHighlighting(
+                        greenlitColor:new Color(0.4f, 1f, 0.6f), 
+                        yellowlitColor:new Color(1, 0.8f, 0.6f), 
+                        redlitColor:new Color(0.9f, 0.2f, 0.2f),
+                        bluelitColor:new Color(0f, 0.3f, 0.9f));
+                    if (selectedMapTile is not null)
+                    {
+                        MapCountry selectedMapCountry = selectedMapTile.mapCountry;
+                        MapFaction selectedMapFaction = selectedMapCountry is null ? null : 
+                            (selectedMapCountry.colonialOverlord is null ? 
+                                selectedMapCountry.Faction 
+                                : 
+                                selectedMapCountry.colonialOverlord.Faction);
+                        IGameFaction selectedGameFaction = selectedMapFaction is null
+                            ? null
+                            : GameState.GetFaction(selectedMapFaction.ID);
+                        if (selectedMapCountry is not null && selectedMapFaction is null)
+                        {
+                            foreach (var mapTile in MapTilesByID)
+                            {
+                                if (mapTile.mapCountry is not null)
+                                {
+                                    if (mapTile.mapCountry.Faction is not null && 
+                                        GameState.GetFaction(mapTile.mapCountry.Faction.ID).IsAtWarWithCountry(selectedMapCountry.ID))
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Red);
+                                    }
+                                    else if (mapTile.mapCountry == selectedMapCountry)
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Green);
+                                    }
+                                    else if (mapTile.mapCountry.colonialOverlord == selectedMapCountry)
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Blue);
+                                    }
+                                    else if (mapTile.mapCountry is not null)
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Yellow);
+                                    }
+                                } 
+
+                            }
+                        }
+                        else if (selectedGameFaction is not null)
+                        {
+                            foreach (var mapTile in MapTilesByID)
+                            {
+                                if (mapTile.mapCountry is not null)
+                                {
+                                    if (mapTile.mapCountry.colonialOverlord is not null &&
+                                             mapTile.mapCountry.colonialOverlord.Faction == selectedMapFaction)
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Blue);
+                                    else if (mapTile.mapCountry.Faction is not null)
+                                    {
+
+                                        if (mapTile.mapCountry.Faction == selectedMapFaction ||
+                                                 (mapTile.mapCountry.colonialOverlord is not null &&
+                                                  mapTile.mapCountry.colonialOverlord.Faction == selectedMapFaction))
+                                            SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Green);
+                                        else if (selectedGameFaction.IsAtWarWithFaction(mapTile.mapCountry.Faction.ID))
+                                            SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Red);
+                                        else SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Yellow);
+                                    }
+                                    else if (selectedGameFaction.IsAtWarWithCountry(mapTile.mapCountry.ID))
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Red);
+                                    }
+                                    else
+                                    {
+                                        SetTileHighlightStatus(mapTile.ID, TileHighlightColor.Yellow);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case MapMode.Supply:
+                    FlushTileHighlighting(
+                        greenlitColor:new Color(0.4f, 1f, 0.6f), 
+                        yellowlitColor:new Color(1, 0.8f, 0.6f), 
+                        redlitColor:new Color(0.6f, 0.2f, 0.1f));
+                    if (selectedMapTile is not null)
+                    {
+                        MapCountry selectedMapCountry = selectedMapTile.mapCountry;
+                        MapFaction selectedMapFaction = selectedMapCountry is null ? null : selectedMapCountry.Faction;
+                        if (selectedMapFaction is not null)
+                        {
+                            IGameFaction faction = GameState.GetFaction(selectedMapFaction.ID);
+                            for (int i = 0; i < MapTilesByID.Length; i++)
+                            {
+                                switch (faction.TileSupplyStatus[i])
+                                {
+                                    case SupplyStatus.InSupply:
+                                        SetTileHighlightStatus(i, TileHighlightColor.Green);
+                                        break;
+                                    case SupplyStatus.NotInSupply:
+                                        SetTileHighlightStatus(i, TileHighlightColor.Red);
+                                        break;
+                                    default: throw new NotImplementedException();
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case MapMode.Trade:
+                    FlushTileHighlighting(
+                        greenlitColor:new Color(0.4f, 1f, 0.6f), 
+                        yellowlitColor:new Color(1, 0.8f, 0.6f), 
+                        redlitColor:new Color(0.6f, 0.2f, 0.1f),
+                        bluelitColor:new Color(1f, 0.6f, 0.2f));
+                    if (selectedMapTile is not null)
+                    {
+                        MapCountry selectedMapCountry = selectedMapTile.mapCountry;
+                        MapFaction selectedMapFaction = selectedMapCountry is null ? null : selectedMapCountry.Faction;
+                        if (selectedMapFaction is not null)
+                        {
+                            IGameFaction faction = GameState.GetFaction(selectedMapFaction.ID);
+                            for (int i = 0; i < MapTilesByID.Length; i++)
+                            {
+                                if (faction.PredictedTileTradeStatus[i] == TradeStatus.FullyAccessible)
+                                    SetTileHighlightStatus(i, TileHighlightColor.Green);
+                                else if (faction.PredictedTileTradeStatus[i] == TradeStatus.Blockaded_ColonialAccessible)
+                                    SetTileHighlightStatus(i, TileHighlightColor.Yellow);
+                                else if (faction.PredictedTileTradeStatus[i] == TradeStatus.FullyBlockaded)
+                                    SetTileHighlightStatus(i, TileHighlightColor.Red);
+                                else SetTileHighlightStatus(i, TileHighlightColor.Red);
+                            }
+                        }
+                    }
+                    break;
+                default: throw new NotImplementedException();
+            }
+            
+            foreach (var mapTile in MapTilesByID)
+            {
+                if (_highlightChangedTiles.Contains(mapTile.ID)) mapTile.RecalculateMaterialDuringRuntime();
+            }
+        }
 
 
-
+        private static int guidCounter = 0;
+        private int guid;
         private void Start()
         {
+            guidCounter++;
+            guid = guidCounter;
+            Debug.Log($"Creating map #{guid}");
             CadreBlockMesh = Resources.Load<Mesh>("Meshes/CadreBlock");
             MapCadresByID = new MapCadre[MaxCadres];
             // MapFactionsByID = new MapFaction[] // Set in TTGameState when building the map
-            RecalculateMapObjectLists();
+            //RecalculateMapObjectLists();
         }
+#if UNITY_EDITOR
         private void OnValidate()
         {
             MapCadresByID = new MapCadre[MaxCadres];
         }
+#endif
+
 
         
         
@@ -110,7 +371,6 @@ namespace GameBoard
             try
             {
                 MapCadre cadre = MapCadresByID[id];
-                MapCadresByID[id] = null;
                 cadre.DestroyMapObject();
             }
             catch (KeyNotFoundException e)
@@ -193,14 +453,13 @@ namespace GameBoard
                 else if (mapObject is MapCountry mapCountry)
                 {
                     MapFaction faction = mapCountry.GetComponentInParent<MapFaction>();
-                    mapCountry.faction = faction;
+                    mapCountry.associatedFaction = faction;
                     indexedMapCountries.Add(mapCountry);
                 }
                 else if (mapObject is MapFaction mapFaction)
                 {
                     Debug.LogError($"Map Faction in Map File ({mapFaction.name}). Factions should be created through the scenario file, not on the map directly");
                 }
-
             }
 
             MapTilesByID = indexedMapTiles.ToArray();
@@ -224,6 +483,17 @@ namespace GameBoard
 
         private void Update()
         {
+            //Debugging
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                string str = "";
+                for (int i = 0; i < MapCadresByID.Length; i++)
+                {
+                    str += $"#{i} - {MapCadresByID[i]}\n";
+                }
+                Debug.Log(str);
+            }
+            
             foreach (var mapObject in new List<MapObject>(ObjectsNeedingAnimation))
             {
                 mapObject.Animate();
@@ -239,6 +509,10 @@ namespace GameBoard
             if (_fullRecalculationCalled)
             {
                 Debug.Log("Full recalculation");
+                foreach (var mapCountry in MapCountriesByID)
+                {
+                    mapCountry.RecalculateOverlayPositioning();
+                }
                 foreach (var border in MapBordersByID)
                 {
                     border.Recalculate();
@@ -391,8 +665,18 @@ namespace GameBoard
                     continue;
                 }
             }
-            
-            
+
+            if (_fullRecalculationCalled)
+            {
+                foreach (var mapCountry in MapCountriesByID)
+                {
+                    if (mapCountry.InternalName == null || mapCountry.InternalName == "")
+                    {
+                        mapCountry.InternalName = mapCountry.name;
+                    }
+                    else mapCountry.name = mapCountry.InternalName;
+                }
+            }
 
 
 #endif
@@ -445,6 +729,7 @@ namespace GameBoard
 
         public void DeregisterObject(MapObject mapObject) // Should only ever be called through MapObject.Deregister
         {
+            Debug.Log($"Deregistering {mapObject.GetType().Name} #{mapObject.ID}");
             MapObjects.Remove(mapObject);
             ObjectsNeedingAnimation.Remove(mapObject);
             if (mapObject is MapCadre cadre)
@@ -490,7 +775,7 @@ namespace GameBoard
 
             foreach (var mapTile in MapTilesByID)
             {
-                mapTile.RecalculateMaterialDuringRuntime();
+                //mapTile.RecalculateMaterialDuringRuntime(); // Handled by GameTile.RefreshMapState
             }
 
             foreach (var mapBorder in MapBordersByID)
@@ -535,6 +820,16 @@ namespace GameBoard
             if (iMapCountry != -1) return MapCountriesByID[iMapCountry];
             else return null;
         }
-        
+
+        public void Dispose()
+        {
+            foreach (var mapObject in new List<MapObject>(MapObjects))
+            {
+                if (mapObject is not null) mapObject.DestroyMapObject();
+                else Debug.LogWarning($"Null map object in map objects list");
+            }
+            Destroy(this.gameObject);
+            Destroy(this);
+        }
     }
 }

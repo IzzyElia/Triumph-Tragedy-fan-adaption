@@ -29,6 +29,17 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         [Rule(name:"All Controlled Territory", description:"Units can be built anywhere your faction occupies")]
         AllControlledTerritory, // Units can be built anywhere your faction occupies
     }
+    
+    [Rule(name:"Combat Support Rule", description:"Sets the rules for how combat support works, or disables it")]
+    public enum CombatSupportRule
+    {
+        [Rule(name:"Selectable", description:"Can select which units support what combats")]
+        Selectable, // Original rules from triumph and tragedy
+        [Rule(name:"Automatic", description:"Units support all combats within range")]
+        Automatic, // Any country brought to your faction *diplomatically* can build their national units
+        [Rule(name:"Disabled", description:"Combat support is disabled. Units must be on the same tile to join combat")]
+        Disabled, // Units can be built anywhere your faction occupies
+    }
 
     public enum CombatDamageRule
     {
@@ -45,6 +56,7 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         // Global rules
         public UnitPlacementRule unitPlacementRule = UnitPlacementRule.DiploAnnexedCountriesAllowed;
         public CombatDamageRule CombatDamageRule = CombatDamageRule.RandomEvenSpread;
+        public CombatSupportRule CombatSupportRule = CombatSupportRule.Disabled;
         
         public int maxCadrePips = 4;
         public int TechMatchesRequiredForTechUpgrade = 2;
@@ -78,6 +90,8 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         
         // Unit Types
         public int iSeaTransportUnitType => GetIDOfNamedUnitType("Convoy");
+        public UnitType SeaTransportUnitType => GetNamedUnitType("Convoy");
+        public UnitType FallbackUnitType => GetNamedUnitType("Infantry");
         public UnitType[] unitTypes = new UnitType[0];
         public int GetIDOfNamedUnitType(string name)
         {

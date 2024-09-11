@@ -26,7 +26,7 @@ namespace GameBoard.MapMarkers
             foreach (var mapCadre in Map.MapCadresByID)
             {
                 if (mapCadre is null) continue;
-                if (mapCadre.MapCountry.faction.ID != CombatOption.iDefender) continue;
+                if (mapCadre.MapCountry.Faction is null || mapCadre.MapCountry.Faction.ID != CombatOption.iDefender) continue;
                 if (Map.GameState.CalculateAccessibleTiles(mapCadre.ID, MoveType.Support).Contains(CombatOption.iTile))
                 {
                     SupportOptions.Add(mapCadre.ID);

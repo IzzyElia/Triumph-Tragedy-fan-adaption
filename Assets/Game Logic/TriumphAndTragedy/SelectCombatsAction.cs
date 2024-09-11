@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameLogic;
@@ -38,7 +37,7 @@ namespace Game_Logic.TriumphAndTragedy
             foreach (var cadre in GameState.GetEntitiesOfType<GameCadre>())
             {
                 if (cadre == null || !cadre.Active) continue;
-                if (cadre.Faction.ID > GameState.PlayerCount) continue; // Is presumably an unplayed/neutral faction
+                if (cadre.Faction == null) continue; // Is presumably an unplayed/neutral faction
                 if (GameState.PlayerCommitted[cadre.Faction.ID] == false) continue;
                 if (cadre.Faction.ID == GameState.ActivePlayer) continue;
                 int[] iTiles = GameState.CalculateAccessibleTiles(cadre.ID, MoveType.Support);
@@ -57,10 +56,19 @@ namespace Game_Logic.TriumphAndTragedy
             }
 
             // Set the game phase and push
-            GameState.GamePhase = GamePhase.SelectSupport;
-            GameState.AdvanceToCombatIfAllPlayersDoneWithSupport(push:false);
+            if (GameState.Ruleset.CombatSupportRule == CombatSupportRule.Selectable)
+            {
+                GameState.GamePhase = GamePhase.SelectSupport;
+                GameState.AdvanceToCombatIfAllPlayersDoneWithSupport(push:false);
+            }
+            else
+            {
+                GameState.GamePhase = GamePhase.SelectNextCombat;
+            }
+            
             foreach (var cadre in GameState.GetEntitiesOfType<GameCadre>())
             {
+                // TODO do ALL of them need to be pushed? I think this was a debugging measure when I couldn't figure out why pips weren't syncing
                 if (cadre is not null && cadre.Active) cadre.PushFullState();
             }
             GameState.PushGlobalFields();
@@ -123,10 +131,9 @@ namespace Game_Logic.TriumphAndTragedy
                             return (false, "Same tile selected multiple times");
                         c_tilesSelected.Add(combatSelection.iTile);
                         GameFaction playerFaction = GameState.GetEntity<GameFaction>(iPlayerFaction);
-                        GameFaction defenderFaction = GameState.GetEntity<GameFaction>(combatSelection.iDefender);
+                        GameFaction defenderFaction = combatSelection.iDefender == -1 ? null : GameState.GetEntity<GameFaction>(combatSelection.iDefender);
                         GameTile tile = GameState.GetEntity<GameTile>(combatSelection.iTile);
                         if (tile is null) return (false, "Invalid tile id");
-                        if (defenderFaction is null) return (false, "Invalid defender faction id");
                         bool attackerUnitPresent = false;
                         bool defenderUnitPresent = false;
                         foreach (var cadre in GameState.GetEntitiesOfType<GameCadre>())

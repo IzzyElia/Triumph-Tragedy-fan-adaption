@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 using Unity.Collections;
 
 namespace Game_Logic.TriumphAndTragedy
@@ -57,12 +58,12 @@ namespace Game_Logic.TriumphAndTragedy
         {
             if (IsVisibleToPlayer(asPlayer))
             {
-                int hash = HashCode.Combine(base.HashFullState(asPlayer), FactoryValue);
+                int hash = Hashing.MurmurHash3_Combine(base.HashFullState(asPlayer), FactoryValue);
                 unchecked
                 {
                     for (int i = 0; i < Techs.Count; i++)
                     {
-                        hash *= Techs[i].GetHashCode();
+                        hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(Techs[i]));
                     }
                 }
 
@@ -74,5 +75,7 @@ namespace Game_Logic.TriumphAndTragedy
                 return hash;
             }
         }
+
+        public override void RefreshMapState() { }
     }
 }

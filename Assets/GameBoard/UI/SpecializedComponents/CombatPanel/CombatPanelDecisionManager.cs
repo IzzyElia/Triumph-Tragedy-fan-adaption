@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Codice.Client.BaseCommands;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
@@ -64,6 +63,25 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             foreach (var diceOption in _diceOptions)
             {
                 diceOption.OnDiceDistributionUpdated(default);
+            }
+        }
+
+        private bool _prevShowingFinalResult = true;
+        public void RefreshCommitButtonState()
+        {
+            if (_prevShowingFinalResult != CombatPanel.ShowingFinalResult)
+            {
+                _prevShowingFinalResult = CombatPanel.ShowingFinalResult;
+                if (CombatPanel.ShowingFinalResult)
+                {
+                    commitButton.gameObject.SetActive(false);
+                    closeButton.gameObject.SetActive(true);
+                }
+                else
+                {
+                    commitButton.gameObject.SetActive(true);
+                    closeButton.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -161,19 +179,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private bool ShowCloseButton = false;
         public override void OnGamestateChanged()
         {
-            if (_combatPanel is not null)
-            {
-                if (CombatPanel.ShowingFinalResult)
-                {
-                    commitButton.gameObject.SetActive(false);
-                    closeButton.gameObject.SetActive(true);
-                }
-                else
-                {
-                    commitButton.gameObject.SetActive(true);
-                    closeButton.gameObject.SetActive(false);
-                }
-            }
+
         }
 
         public override void OnResyncEnded()
@@ -203,7 +209,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private CombatPanelDiceOption _hoveredDiceOption;
         public override void UIUpdate()
         {
-            
+            RefreshCommitButtonState();
         }
 
         public void CombatAnimation(CombatAnimationData animationData, AnimationTimeData timeData)

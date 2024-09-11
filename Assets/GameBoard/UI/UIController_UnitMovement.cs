@@ -8,7 +8,7 @@ namespace GameBoard.UI
     public partial class UIController
     {
         public HashSet<int> MovementHighlights { get; private set; } = new HashSet<int>();
-        public List<MapCadreMovementGhost> heldMovementGhosts = new List<MapCadreMovementGhost>();
+        public MapCadreMovementGhost heldMovementGhost = null;
         public List<MapCadreMovementGhost> pendingMovementGhosts = new List<MapCadreMovementGhost>();
 
         public void CleanupAfterMovement()
@@ -20,13 +20,14 @@ namespace GameBoard.UI
                 MapRenderer.MapTilesByID[iTile].RecalculateHighlighting();
             }
 
-            foreach (var movementGhost in heldMovementGhosts)
+            if (heldMovementGhost is not null)
             {
-                MapRenderer.MapCadresByID[movementGhost.BaseCadre].Darken = false;
-                MapRenderer.MapCadresByID[movementGhost.BaseCadre].RecalculateAppearance();
-                movementGhost.DestroyMapObject();
+                MapRenderer.MapCadresByID[heldMovementGhost.BaseCadre].Darken = false;
+                MapRenderer.MapCadresByID[heldMovementGhost.BaseCadre].RecalculateAppearance();
+                heldMovementGhost.DestroyMapObject();
+                heldMovementGhost = null;
             }
-            heldMovementGhosts.Clear();
+
             
             foreach (var movementGhost in pendingMovementGhosts)
             {
@@ -42,7 +43,7 @@ namespace GameBoard.UI
         public (int available, int remaining) GetCommands()
         {
             IGameFaction faction = GameState.GetFaction(iPlayer);
-            int commandsUsed = (int)MovementAction.GetData()[0];
+            int commandsUsed = pendingMovementGhosts.Count;
             int commandsAvailable = faction.CommandsAvailable;
             int commandsRemaining = commandsAvailable - commandsUsed;
             return (commandsAvailable, commandsRemaining);
@@ -53,42 +54,38 @@ namespace GameBoard.UI
             
             if (PointerInputStatus == InputStatus.Pressed)
             {
-                if (heldMovementGhosts.Count > 0 && !(HoveredMapObject is MapCadre cadre && cadre.MapCountry.faction == PlayerMapFaction)
-                    && MovementHighlights.Contains(HoveredOverTile.ID))
+                if (heldMovementGhost is not null && HoveredOverTile is not null && MovementHighlights.Contains(HoveredOverTile.ID))
                 {
-                    foreach (var ghost in heldMovementGhosts)
+                    if (heldMovementGhost.Tile == MapRenderer.MapCadresByID[heldMovementGhost.BaseCadre].Tile)
                     {
-                        if (ghost.Tile == MapRenderer.MapCadresByID[ghost.BaseCadre].Tile)
-                        {
-                            ghost.DestroyMapObject();
-                            continue;
-                        }
-                        pendingMovementGhosts.Add(ghost);
-                        MovementActionData move = new MovementActionData(ghost.BaseCadre, HoveredOverTile.ID);
-                        ghost.MovementAction = move;
-                        MovementAction.AddParameter(move);
+                        heldMovementGhost.DestroyMapObject();
+                        heldMovementGhost = null;
+                    }
+                    else
+                    {
+                        pendingMovementGhosts.Add(heldMovementGhost);
+                        MovementActionData move = new MovementActionData(isDiploAction:false, heldMovementGhost.BaseCadre, HoveredOverTile.ID);
+                        heldMovementGhost.MovementAction = move;
 
                         CommandsInfoWindow.Refresh();
+
+                        heldMovementGhost = null;
                     }
                     
-                    heldMovementGhosts.Clear();
-
-                    List<MapObject> prevSelectedMapObjects = new List<MapObject>(SelectedMapObjects);
-                    SelectedMapObjects.Clear();
-                    foreach (var mapObject in prevSelectedMapObjects)
+                    /*
+                    MapObject prevSelectedMapObject = SelectedMapObject;
+                    SelectedMapObject = null;
+                    if (prevSelectedMapObject is not null && !prevSelectedMapObject.IsDestroyed)
                     {
-                        if (!mapObject.IsDestroyed)
-                        {
-                            mapObject.OnSelectionStatusChanged(SelectionStatus.Unselected);
-                            SelectionChanged = true;
-                        }
+                        prevSelectedMapObject.OnSelectionStatusChanged(SelectionStatus.Unselected);
+                        SelectionChanged = true;
                     }
+                    */
                 }
                 else if (HoveredMapObject is MapCadreMovementGhost movementGhost)
                 {
                     if (pendingMovementGhosts.Remove(movementGhost))
                     {
-                        MovementAction.RemoveParameter(movementGhost.MovementAction);
                         MapRenderer.MapCadresByID[movementGhost.BaseCadre].Darken = false;
                         MapRenderer.MapCadresByID[movementGhost.BaseCadre].RecalculateAppearance();
                         movementGhost.DestroyMapObject();
@@ -102,21 +99,21 @@ namespace GameBoard.UI
                 OnSelectionChanged();
             }
 
-            if (HoveredOverTileChanged && heldMovementGhosts.Count > 0 && HoveredOverTile is not null)
+            if (HoveredOverTileChanged && heldMovementGhost is not null && HoveredOverTile is not null)
             {
                 if (MovementHighlights.Contains(HoveredOverTile.ID))
                 {
-                    foreach (var ghost in heldMovementGhosts)
+                    if (heldMovementGhost is not null)
                     {
-                        ghost.gameObject.SetActive(true);
-                        ghost.Tile = HoveredOverTile;
+                        heldMovementGhost.gameObject.SetActive(true);
+                        heldMovementGhost.Tile = HoveredOverTile;
                     }
                 }
                 else
                 {
-                    foreach (var ghost in heldMovementGhosts)
+                    if (heldMovementGhost is not null)
                     {
-                        ghost.gameObject.SetActive(false);
+                        heldMovementGhost.gameObject.SetActive(false);
                     }
                 }
             }
@@ -126,17 +123,14 @@ namespace GameBoard.UI
         {
             List<int> previousHighlightedTiles = new List<int>(MovementHighlights);
             List<int[]> movesets = new List<int[]>();
-            foreach (var selectedMapObject in SelectedMapObjects)
+            if (SelectedMapObject is MapCadre selectedCadre)
             {
-                if (selectedMapObject is MapCadre cadre)
+                if (!selectedCadre.Darken)
                 {
-                    if (!cadre.Darken)
-                    {
-                        cadre.Darken = true;
-                        cadre.RecalculateAppearance();
-                    }
-                    movesets.Add(GameState.CalculateAccessibleTiles(cadre.ID, MoveType.Normal));
+                    selectedCadre.Darken = true;
+                    selectedCadre.RecalculateAppearance();
                 }
+                movesets.Add(GameState.CalculateAccessibleTiles(selectedCadre.ID, MoveType.Normal));
             }
 
             if (movesets.Count > 0)
@@ -159,40 +153,26 @@ namespace GameBoard.UI
                 MapRenderer.MapTilesByID[iTile].RecalculateHighlighting();
             }
 
-
-            List<MapCadre> selectedCadres = new List<MapCadre>();
-            foreach (var mapObject in SelectedMapObjects)
+            
+            if (SelectedMapObject is MapCadre cadre)
             {
-                if (mapObject is MapCadre cadre) selectedCadres.Add(cadre);
-            }
-            for (int i = 0; i < selectedCadres.Count; i++)
-            {
-                MapCadre cadre = selectedCadres[i];
-                if (i >= heldMovementGhosts.Count)
+                if (heldMovementGhost is null)
                 {
                     MapCadreMovementGhost ghost = MapCadreMovementGhost.CreateMovementGhost("MovementGhost", MapRenderer, HoveredOverTile, cadre.MapCountry, cadre.UnitType, UnitGhostPurpose.Held, cadre.ID);
-                    heldMovementGhosts.Add(ghost);
-                }
-                else if (heldMovementGhosts[i] is null)
-                {
-                    MapCadreMovementGhost ghost = MapCadreMovementGhost.CreateMovementGhost("MovementGhost", MapRenderer, HoveredOverTile, cadre.MapCountry, cadre.UnitType, UnitGhostPurpose.Held, cadre.ID);
-                    heldMovementGhosts[i] = ghost;
+                    heldMovementGhost = ghost;
                     MapRenderer.MapCadresByID[ghost.BaseCadre].Darken = true;
                     MapRenderer.MapCadresByID[ghost.BaseCadre].RecalculateAppearance();
                 }
                 else
                 {
-                    heldMovementGhosts[i].UnitType = cadre.UnitType;
-                    heldMovementGhosts[i].MapCountry = cadre.MapCountry;
+                    heldMovementGhost.UnitType = cadre.UnitType;
+                    heldMovementGhost.MapCountry = cadre.MapCountry;
                 }
             }
-
-            if (selectedCadres.Count < heldMovementGhosts.Count)
+            else if (heldMovementGhost is not null)
             {
-                for (int i = selectedCadres.Count; i < heldMovementGhosts.Count; i++)
-                {
-                    heldMovementGhosts[i].DestroyMapObject();
-                }
+                heldMovementGhost.DestroyMapObject();
+                heldMovementGhost = null;
             }
         }
     }

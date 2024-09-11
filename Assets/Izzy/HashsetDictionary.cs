@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -131,24 +132,19 @@ namespace Izzy
 				hashset.Clear();
 			}
 		}
-		public TValueType[] Get_CertainOfKey (TKey key)
+		public IReadOnlyCollection<TValueType> Get_CertainOfKey (TKey key)
 		{
-			HashSet<TValueType> values = dictionary[key];
-			TValueType[] outValues = new TValueType[values.Count];
-			values.CopyTo(outValues);
-			return outValues;
+			return dictionary[key];
 		}
-		public TValueType[] Get (TKey key)
+		public IReadOnlyCollection<TValueType> Get (TKey key)
 		{
 			if (dictionary.TryGetValue(key, out HashSet<TValueType> values))
 			{
-				TValueType[] outValues = new TValueType[values.Count];
-				values.CopyTo(outValues);
-				return outValues;
+				return values;
 			}
 			else
 			{
-				return new TValueType[0];
+				return Array.Empty<TValueType>();
 			}
 		}
 		public int Count(TKey key)

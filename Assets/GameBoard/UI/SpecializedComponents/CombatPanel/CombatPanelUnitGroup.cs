@@ -37,7 +37,8 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         private ITTGameState _gameState;
         private UnitType _unitType;
         private int iFaction;
-        private List<ICombatPanelUnit> _panelUnits = new List<ICombatPanelUnit>();
+        private List<ICombatPanelUnit> _panelUnitGraphics = new List<ICombatPanelUnit>();
+        private IGameCadre[] _panelUnitReferences = new IGameCadre[0];
         [SerializeField] private Image background;
         [SerializeField] private Image overlay;
         private Color _baseColor;
@@ -48,9 +49,50 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         public void Refresh(ITTGameState gameState, UnitType unitType, IList<IGameCadre> cadres, MapFaction faction)
         {
             this._unitType = unitType;
-            this.iFaction = faction.ID;
+            this.iFaction = faction is null ? -1 : faction.ID;
+            this._panelUnitReferences = new IGameCadre[cadres.Count];
+            for (int i = 0; i < cadres.Count; i++)
+            {
+                _panelUnitReferences[i] = cadres[i];
+            }
             Dictionary<string, int> countryProminance = new Dictionary<string, int>();
-            for (int i = 0; i < Math.Max(cadres.Count, _panelUnits.Count); i++)
+            if (_panelUnitGraphics.Count > cadres.Count)
+            {
+                for (int i = 0; i < _panelUnitGraphics.Count; i++)
+                {
+                    if (i < cadres.Count)
+                    {
+                        IGameCadre cadre = cadres[i];
+                        _panelUnitGraphics[i].SetBaseValues(cadre.Pips, cadre.MaxPips, cadre.UnitType, MapRenderer.MapCountriesByID[cadre.iCountry], cadre.ID);
+                        _combatPanel.RegisterCombatPanelUnit(cadre.ID, _panelUnitGraphics[i]);
+                    }
+                    else
+                    {
+                        _combatPanel.DeregisterCombatPanelUnit(_panelUnitGraphics[i].CadreID);
+                        _panelUnitGraphics[i].DestroyUIComponent();
+                    }
+                }
+            }
+            else if (cadres.Count > _panelUnitGraphics.Count)
+            {
+                for (int i = 0; i < cadres.Count; i++)
+                {
+                    IGameCadre cadre = cadres[i];
+                    if (i < _panelUnitGraphics.Count)
+                    {
+                        _panelUnitGraphics[i].SetBaseValues(cadre.Pips, cadre.MaxPips, cadre.UnitType, MapRenderer.MapCountriesByID[cadre.iCountry], cadre.ID);
+                        _combatPanel.RegisterCombatPanelUnit(cadre.ID, _panelUnitGraphics[i]);
+                    }
+                    else
+                    {
+                        CombatPanelUnit panelUnit = CombatPanelUnit.Create(unitGroup:this, cadre);
+                        _panelUnitGraphics.Add(panelUnit);
+                        _combatPanel.RegisterCombatPanelUnit(cadre.ID, panelUnit);
+                    }
+                }
+            }
+
+            for (int i = 0; i < Math.Max(cadres.Count, _panelUnitGraphics.Count); i++)
             {
                 if (i < cadres.Count)
                 {
@@ -64,27 +106,28 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
                     {
                         countryProminance.Add(country.name, 1);
                     }
-                    if (i < _panelUnits.Count)
+                    if (i < _panelUnitGraphics.Count)
                     {
-                        _panelUnits[i].SetBaseValues(pips:cadre.Pips, maxPips:cadre.MaxPips, unitType:cadre.UnitType, country:country);
+                        _panelUnitGraphics[i].SetBaseValues(pips:cadre.Pips, maxPips:cadre.MaxPips, unitType:cadre.UnitType, country:country, cadre.ID);
+                        _combatPanel.DeregisterCombatPanelUnit(cadre.ID);
+                        _combatPanel.RegisterCombatPanelUnit(cadre.ID, _panelUnitGraphics[i]);
                     }
                     else
                     {
-                        CombatPanelUnit panelUnit = CombatPanelUnit.Create(unitGroup:this, pips:cadre.Pips, maxPips:cadre.MaxPips, unitType:cadre.UnitType, country:country);
-                        _panelUnits.Add(panelUnit);
+                        
                     }
                 }
-                else if (i < _panelUnits.Count)
+                else if (i < _panelUnitGraphics.Count)
                 {
-                    _panelUnits[i].DestroyUIComponent();
+                    
                 }
             }
-            if (_panelUnits.Count > cadres.Count)
+            if (_panelUnitGraphics.Count > cadres.Count)
             {
-                _panelUnits.RemoveRange(cadres.Count, _panelUnits.Count - cadres.Count);
+                _panelUnitGraphics.RemoveRange(cadres.Count, _panelUnitGraphics.Count - cadres.Count);
             }
             
-            (string country, int prominance) mostProminantCountry = (faction.leader.name, 0);
+            (string country, int prominance) mostProminantCountry = (null, 0);
             foreach ((string country, int prominance) in countryProminance)
             {
                 if (prominance > mostProminantCountry.prominance) mostProminantCountry = (country, prominance);
@@ -92,7 +135,7 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
             
             background.sprite = unitType.GetCombatPanelSprite(
                 firstChoiceCountry:mostProminantCountry.country, 
-                secondChoiceCountry:faction.leader.name);
+                secondChoiceCountry:faction is null ? null : faction.leader.name);
             float aspectRatio = background.sprite is null ? 1 : (float)background.sprite.texture.width / (float)background.sprite.texture.height;
             backgroundAspectRatioFitter.aspectRatio = aspectRatio;
         }
@@ -149,7 +192,11 @@ namespace GameBoard.UI.SpecializeComponents.CombatPanel
         protected override void OnBeingDestroyed()
         {
             base.OnBeingDestroyed();
-            
+            _combatPanel.DeregisterAnimationParticipant(this);
+            foreach (var gameCadre in _panelUnitReferences)
+            {
+                _combatPanel.DeregisterCombatPanelUnit(gameCadre.ID);
+            }
         }
 
         public void CombatAnimation(CombatAnimationData animationData, AnimationTimeData timeData)

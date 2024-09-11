@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
 using GameBoard;
 using GameBoard.UI.AnimatedEvents;
 using GameLogic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 using Unity.Collections;
 using UnityEngine;
 
@@ -37,6 +37,7 @@ namespace Game_Logic.TriumphAndTragedy
             cadre.iUnitType = iUnitType;
             cadre.iCountry = iCountry;
             cadre.Tile = gameState.GetOrCreateEntity<GameTile>(iTile);
+            cadre.MaxPips = gameState.Ruleset.maxCadrePips;
             cadre.Pips = pips;
             ((TTGameState)gameState).CadresByTileID.Add(iTile, cadre);
             cadre.Active = true;
@@ -49,12 +50,12 @@ namespace Game_Logic.TriumphAndTragedy
             ((TTGameState)GameState).CadresByTileID.Remove_CertainOfKey(_iTile, this);
             ((TTGameState)GameState).FreedCadreIDs.Enqueue(this.ID);
             Active = false;
-            RecalculateDerivedValuesAndPushFullState();
+            PushFullState();
         }
 
         protected override void OnDeactivatedClientside()
         {
-            MapCadre.DestroyMapObject();
+            if (MapCadre is not null) MapCadre.DestroyMapObject();
         }
         
 
@@ -173,35 +174,51 @@ namespace Game_Logic.TriumphAndTragedy
             iCountry = incomingMessage.ReadInt();
             iTile = incomingMessage.ReadInt();
             
-            MapTile tile = MapRenderer.MapTilesByID[iTile];
-            MapCountry country = MapRenderer.MapCountriesByID[iCountry];
-            UnitType mapCadreUnitType = this.UnitType == null ? UnitType.Unknown : this.UnitType;
 
-            if (MapCadre is null)
+            if (Active && GameState.NetworkMember.GameStarted)
             {
-                try
+                RefreshMapState();
+            }
+        }
+
+        public override void RefreshMapState()
+        {
+            if (Active)
+            {
+                MapTile tile = MapRenderer.MapTilesByID[iTile];
+                MapCountry country = MapRenderer.MapCountriesByID[iCountry];
+                UnitType mapCadreUnitType = this.UnitType == null ? UnitType.Unknown : this.UnitType;
+                if (MapCadre is null)
                 {
                     MapCadre.Create(name:$"Cadre {ID}", 
                         map:MapRenderer, 
                         tile:tile, 
                         country:country,
                         unitType:mapCadreUnitType,
+                        pips:Pips,
+                        maxPips:MaxPips,
                         id: ID);
                 }
-                catch (Exception e)
+                else
                 {
-                    Console.WriteLine(e);
-                    throw;
-                }
+                    MapCadre.MapCountry = country;
+                    MapCadre.Tile = tile;
+                    MapCadre.UnitType = mapCadreUnitType;
+                    MapCadre.MaxPips = MaxPips;
+                    MapCadre.Pips = Pips;
+                    MapCadre.RecalculateAppearance();
+                } 
             }
             else
             {
-                MapCadre.MapCountry = country;
-                MapCadre.Tile = tile;
-                MapCadre.UnitType = mapCadreUnitType;
-                MapCadre.MaxPips = MaxPips;
-                MapCadre.Pips = Pips;
+                if (MapRenderer.MapCadresByID[ID] is not null)
+                {
+                    UnityEngine.Object.Destroy(MapRenderer.MapCadresByID[ID]);
+                    MapRenderer.MapCadresByID[ID] = null;
+                    Debug.Log($"Destroying cadre #{ID} because it is flagged as inactive");
+                }
             }
+
         }
 
         protected override void WriteFullState(int targetPlayer, ref DataStreamWriter outgoingMessage)
@@ -234,25 +251,20 @@ namespace Game_Logic.TriumphAndTragedy
             unchecked
             {
                 if (IsRevealedTo(asPlayer))
-                    hash *= iUnitType.GetHashCode();
+                    hash *= Hashing.MurmurHash3(iUnitType);
                 else
-                    hash *= -2.GetHashCode();
-                hash *= HashCode.Combine(iTile, iCountry, Pips, MaxPips);
+                    hash *= Hashing.MurmurHash3(-2);
+                hash *= Hashing.MurmurHash3_Combine(iTile, iCountry, Pips, MaxPips);
             }
 
             return hash;
         }
 
-        public void TakeHit(byte hits = 1)
+        public void TakeHit()
         {
-            if (hits >= Pips)
-            {
-                //Kill(); // Units are killed at end of combat
-            }
-            else
-            {
-                Pips -= hits;
-            }
+            Pips -= 1;
+            if (Pips < 0) Pips = 0;
+            Faction?.RecalculateTotalPipCount(push:true);
         }
     }
 }

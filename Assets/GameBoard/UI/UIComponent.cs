@@ -17,7 +17,7 @@ namespace GameBoard.UI
         {
         }
 
-        protected Map MapRenderer => UIController.MapRenderer;
+        public Map MapRenderer => UIController.MapRenderer;
         protected ITTGameState GameState => UIController.GameState;
         protected MapFaction PlayerFaction => UIController.PlayerMapFaction;
 

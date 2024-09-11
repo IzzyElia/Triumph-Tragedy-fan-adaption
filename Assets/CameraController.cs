@@ -20,8 +20,16 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    Vector3 momentum = Vector3.zero;
     void Update()
     {
+        
+        if (Input.GetKey(KeyCode.A)) momentum += new Vector3(-0.004f, 0, 0);
+        if (Input.GetKey(KeyCode.D)) momentum += new Vector3(0.004f, 0, 0);
+        if (Input.GetKey(KeyCode.W)) momentum += new Vector3(0, 0.004f, 0);
+        if (Input.GetKey(KeyCode.S)) momentum += new Vector3(0, -0.004f, 0);
+        cam.transform.position += momentum;
+        momentum *= 0.94f;
         if (!IsPointerOverUIElement())
         {
             ZoomCamera();

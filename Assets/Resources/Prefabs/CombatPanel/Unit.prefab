@@ -179,6 +179,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10c314d4886d4903ba0f72a4c2d655a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  globalName: 
   flagImage: {fileID: 3514699217929207050}
   unitIconImage: {fileID: 1729480704421609325}
   pipsLayout: {fileID: 5225842578104555717}

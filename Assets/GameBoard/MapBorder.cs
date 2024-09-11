@@ -7,7 +7,19 @@ using UnityEditor;
 
 namespace GameBoard
 {
-
+    public enum BorderType
+    {
+        Plains,
+        Forest,
+        River,
+        Mountain,
+        Coast,
+        Sea,
+        Strait,
+        HornOfAfrica,
+        Impassable,
+        Unspecified,
+    }
     [ExecuteAlways]
     public class MapBorder : MapObject
     {
@@ -35,51 +47,7 @@ namespace GameBoard
         string MeshSavePath => $"Assets/Resources/Meshes/Map/Borders/{name}.mesh";
         string MeshLoadPath => $"Meshes/Map/Borders/{name}";
 
-        public void Recalculate()
-        {
-            meshFilter = gameObject.GetComponent<MeshFilter>();
-            if (meshFilter == null) meshFilter = gameObject.AddComponent<MeshFilter>();
-            meshRenderer = gameObject.GetComponent<MeshRenderer>();
-            if (meshRenderer == null) meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            if (shareFirstVertex.enabled && points.Length >= 2 && shareFirstVertex.target.points.Length >= 2)
-            {
-                if (shareFirstVertex.targetFirstVertex)
-                    points[0] = shareFirstVertex.target.points[0];
-                else
-                    points[0] = shareFirstVertex.target.points[^1];
-            }
-            if (shareLastVertex.enabled && points.Length >= 2 && shareLastVertex.target.points.Length >= 2)
-            {
-                if (shareLastVertex.targetFirstVertex)
-                    points[^1] = shareLastVertex.target.points[0];
-                else
-                    points[^1] = shareLastVertex.target.points[^1];
-            }
 
-            if (points.Length > 0)
-            {
-                Vector3 center = Vector3.zero;
-                foreach (Vector3 point in points)
-                {
-                    center += point;
-                }
-                center /= points.Length;
-                transform.localPosition = center;
-            }
-
-            if (markComplete && prevCalculatedWithBorderWidth == Map.borderMeshWidth)
-            {
-                SetMeshToFlashed();
-            }
-            else
-            {
-                prevCalculatedWithBorderWidth = Map.borderMeshWidth;
-                FlashMesh();
-            }
-            SetupMaterial();
-            EditorUtility.SetDirty(this);
-            //Save();
-        }
 
         private void Start()
         {
@@ -88,6 +56,7 @@ namespace GameBoard
 
         private static Color _highlightColor = new Color(1f, 1f, 0.6f, 1);
         private static Color _movementOptionHighlightColor = new Color(0.9f, 0.9f, 0.5f, 1);
+        private static Color _selectedHighlightColor = new Color(1f, 1f, 0.7f, 1);
         Color PickHighlightColor(MapTile tile, bool isCountryBorder)
         {
             switch (tile.HighlightState)
@@ -98,12 +67,15 @@ namespace GameBoard
                     return _highlightColor;
                 case TileHighlightState.NonHoverHighlighted:
                     return _movementOptionHighlightColor;
+                case TileHighlightState.SelectedHighlighted:
+                    return isCountryBorder ? _selectedHighlightColor : (tile.mapCountry is not null ? tile.mapCountry.CalculatedColor : Color.clear);
                 default: throw new NotImplementedException();
             }
         }
 
         public void RecalculateMaterialRuntimeValues()
         {
+            if (!Map.GameState.IsSynced) return;
             Random.InitState(name.GetHashCode());
             
             // Border highlights
@@ -149,7 +121,6 @@ namespace GameBoard
         }
         public void SetupMaterial()
         {
-            
             Random.InitState(name.GetHashCode());
             Material material;
             Color baseColor;
@@ -319,12 +290,60 @@ namespace GameBoard
             */
             //Recalculate();
         }
-        
+
+        // EDITOR -------------------------------
+#if UNITY_EDITOR
+        public void Recalculate()
+        {
+            meshFilter = gameObject.GetComponent<MeshFilter>();
+            if (meshFilter == null) meshFilter = gameObject.AddComponent<MeshFilter>();
+            meshRenderer = gameObject.GetComponent<MeshRenderer>();
+            if (meshRenderer == null) meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            if (shareFirstVertex.enabled && points.Length >= 2 && shareFirstVertex.target.points.Length >= 2)
+            {
+                if (shareFirstVertex.targetFirstVertex)
+                    points[0] = shareFirstVertex.target.points[0];
+                else
+                    points[0] = shareFirstVertex.target.points[^1];
+            }
+            if (shareLastVertex.enabled && points.Length >= 2 && shareLastVertex.target.points.Length >= 2)
+            {
+                if (shareLastVertex.targetFirstVertex)
+                    points[^1] = shareLastVertex.target.points[0];
+                else
+                    points[^1] = shareLastVertex.target.points[^1];
+            }
+
+            if (points.Length > 0)
+            {
+                Vector3 center = Vector3.zero;
+                foreach (Vector3 point in points)
+                {
+                    center += point;
+                }
+                center /= points.Length;
+                transform.localPosition = center;
+            }
+
+            if (markComplete && prevCalculatedWithBorderWidth == Map.borderMeshWidth)
+            {
+                SetMeshToFlashed();
+            }
+            else
+            {
+                prevCalculatedWithBorderWidth = Map.borderMeshWidth;
+                FlashMesh();
+            }
+            SetupMaterial();
+            
+            EditorUtility.SetDirty(this);
+            //Save();
+        }
         public void FlashMesh()
         {
             if (markComplete) UnflashMesh();
             Mesh mesh = GenerateBorderMesh();
-            if (mesh == null)
+            if (mesh is null)
             {
                 mesh = new Mesh(); // empty mesh
             }
@@ -404,19 +423,6 @@ namespace GameBoard
             }
             EditorUtility.SetDirty(this);
         }
-    }
-
-    public enum BorderType
-    {
-        Plains,
-        Forest,
-        River,
-        Mountain,
-        Coast,
-        Sea,
-        Strait,
-        HornOfAfrica,
-        Impassable,
-        Unspecified,
+#endif
     }
 }

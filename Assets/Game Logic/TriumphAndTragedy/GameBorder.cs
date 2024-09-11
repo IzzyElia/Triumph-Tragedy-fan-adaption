@@ -1,6 +1,8 @@
 using System;
 using GameBoard;
 using GameLogic;
+using GameSharedInterfaces;
+using Izzy;
 using Unity.Collections;
 
 namespace Game_Logic.TriumphAndTragedy
@@ -35,7 +37,12 @@ namespace Game_Logic.TriumphAndTragedy
 
         public override int HashFullState(int asPlayer)
         {
-            return HashCode.Combine(BorderType);
+            return Hashing.MurmurHash3_Combine((int)BorderType);
+        }
+
+        public override void RefreshMapState()
+        {
+            
         }
     }
 }

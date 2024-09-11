@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using GameBoard.UI.SpecializeComponents.CombatPanel;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -10,6 +10,7 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
     {
         public GameObject projectile;
         public GameObject[] guns;
+        public FMODUnity.StudioEventEmitter EmitterRef;
         public float metersPerSecond; // speed
         public bool RotateToMatchMovementVector;
         public ShotPattern shotPattern;
@@ -19,11 +20,11 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
         [NonSerialized] public Vector3 StartPosition;
         [NonSerialized] public Vector3 EndPosition;
         [NonSerialized] public bool HasHit;
+        [NonSerialized] public CombatRoll? CombatRoll;
         private float _metersToTravel;
         private float[] shotTimes;
         private int hitShot = -1;
-
-
+        
         public override void OnCreate(CombatPanelEffect combatPanelEffect, CombatAnimationData animationData, AnimationTimeData timeData)
         {
             base.OnCreate(combatPanelEffect, animationData, timeData);
@@ -58,11 +59,21 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                     break;
                 case ShotPattern.Bursts:
                     shotTimes = new float[shotsToFire];
-                    float burstStartTime = StartTime + (timeData.TotalAnimationTime / 3f) + (Random.value * 0.5f);
+                    float burstStartTime;
+                    if (StartTime > combatPanelEffect.burstEndTime)
+                    {
+                        burstStartTime = StartTime + (timeData.TotalAnimationTime / 3f) + (Random.value * 1.5f);
+                    }
+                    else
+                    {
+                        burstStartTime = combatPanelEffect.burstEndTime + Random.value * 0.8f + 0.1f;
+                    }
                     for (int i = 0; i < shotsToFire; i++)
                     {
                         shotTimes[i] = burstStartTime + (burstSeperation * i);
                     }
+
+                    combatPanelEffect.burstEndTime = shotTimes[^1];
                     break;
             }
         }
@@ -82,19 +93,19 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                     {
                         for (int j = 0; j < guns.Length; j++)
                         {
-                            FireShot(guns[j], timeData, playSound:j == 0, hitShot == i);
+                            FireShot(guns[j], timeData, playSound:j == 0, isHit:hitShot == i && j == 0, combatRoll:CombatRoll);
                         }
                     }
                     else
                     {
-                        FireShot(guns[Random.Range(0, guns.Length)], timeData, playSound: true, hitShot == i);
+                        FireShot(guns[Random.Range(0, guns.Length)], timeData, playSound: true, isHit:hitShot == i, combatRoll:CombatRoll);
                     }
                     shotTimes[i] = -1;
                 }
             }
         }
 
-        void FireShot(GameObject gun, AnimationTimeData timeData, bool playSound, bool isHit)
+        void FireShot(GameObject gun, AnimationTimeData timeData, bool playSound, bool isHit, CombatRoll? combatRoll)
         {
             EffectProjectile newProjectile = Instantiate(projectile).GetComponent<EffectProjectile>();
             newProjectile.StartPosition = gun.transform.position;
@@ -108,6 +119,8 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
                 z: 0);
             newProjectile.PlaySound = playSound;
             newProjectile.gun = gun;
+            newProjectile.CombatRoll = combatRoll;
+            newProjectile.IsHit = isHit;
             newProjectile.OnCreate(CombatPanelEffect, AnimationData, timeData);
         }
     }

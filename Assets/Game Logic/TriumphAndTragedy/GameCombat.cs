@@ -5,6 +5,7 @@ using GameBoard.UI.SpecializeComponents.CombatPanel;
 using GameLogic;
 using GameSharedInterfaces;
 using GameSharedInterfaces.Triumph_and_Tragedy;
+using Izzy;
 using Unity.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -52,7 +53,7 @@ namespace Game_Logic.TriumphAndTragedy
             
             foreach (var gameCadre in GameState.GetEntitiesOfType<GameCadre>())
             {
-                if (gameCadre is null) continue;
+                if (gameCadre is null || !gameCadre.Active) continue;
                 if (gameCadre.iTile == iTile) involvedCadres.Add(gameCadre);
             }
 
@@ -71,7 +72,7 @@ namespace Game_Logic.TriumphAndTragedy
             
             foreach (var gameCadre in GameState.GetEntitiesOfType<GameCadre>())
             {
-                if (gameCadre is null) continue;
+                if (gameCadre is null || !gameCadre.Active) continue;
                 if (gameCadre.iTile == iTile) involvedCadres.Add(gameCadre);
             }
 
@@ -117,7 +118,7 @@ namespace Game_Logic.TriumphAndTragedy
             
             // Global combat variables
             GameFaction attacker = GameState.GetEntity<GameFaction>(iAttackerFaction);
-            GameFaction defender = GameState.GetEntity<GameFaction>(iDefenderFaction);
+            GameFaction defender = iDefenderFaction == -1 ? null : GameState.GetEntity<GameFaction>(iDefenderFaction);
             GameTile tile = GameState.GetEntity<GameTile>(iTile);
             List<CombatRoll> combatRolls = new List<CombatRoll>();
             GameCadre[] units = CalculateInvolvedCadres();
@@ -168,12 +169,10 @@ namespace Game_Logic.TriumphAndTragedy
         
         void AdvanceInitiativeAndResolve()
         {
-            Debug.Log("Advancing combat initiative...");
             GameCadre[] units = CalculateInvolvedCadres();
             bool thereIsUnitAtInitiative = false;
             while (initiative < GameState.Ruleset.unitTypes.Length)
             {
-                thereIsUnitAtInitiative = false;
                 for (int i = 0; i < units.Length; i++)
                 {
                     if (units[i].UnitType.IdAndInitiative == initiative)
@@ -214,8 +213,9 @@ namespace Game_Logic.TriumphAndTragedy
             
             foreach (var cadre in units)
             {
-                if (cadre.Faction.ID == iPhasingPlayer && cadre.UnitType.IdAndInitiative == initiative) unitsAtInitiativeOfCurrentPlayer.Add(cadre);
-                else
+                if (cadre.Pips <= 0) continue;
+                if (((cadre.Faction == null && iPhasingPlayer == -1) || cadre.Faction?.ID == iPhasingPlayer) && cadre.UnitType.IdAndInitiative == initiative) unitsAtInitiativeOfCurrentPlayer.Add(cadre);
+                else if ((cadre.Faction == null && iPhasingPlayer != -1) || cadre.Faction.ID != iPhasingPlayer)
                 {
                     switch (cadre.UnitType.Category)
                     {
@@ -238,89 +238,110 @@ namespace Game_Logic.TriumphAndTragedy
             return (unitsAtInitiativeOfCurrentPlayer, opposingGroundUnits, opposingAirUnits, opposingSeaUnits, opposingSubUnits);
         }
 
+        (GameFaction phasingFaction, GameFaction opposingFaction) GetFactions()
+        {
+            GameFaction playerFaction = iPhasingPlayer == -1 ? null : GameState.GetEntity<GameFaction>(iPhasingPlayer);
+            GameFaction opposingFaction = iPhasingPlayer == iAttackerFaction
+                ? iDefenderFaction == -1 ? null : GameState.GetEntity<GameFaction>(iDefenderFaction)
+                : iAttackerFaction == -1 ? null : GameState.GetEntity<GameFaction>(iAttackerFaction);
+            return (playerFaction, opposingFaction);
+        } 
+
         public void RollCombatAtCurrentInitiative(CombatDiceDistribution combatDiceDistribution)
         {
             string whosrolling = iPhasingPlayer == iAttackerFaction ? "Attacker" : "Defender";
             Debug.Log($"{whosrolling} rolling...");
             Random.InitState(Time.time.GetHashCode());
-            GameFaction playerFaction = GameState.GetEntity<GameFaction>(iPhasingPlayer);
-            GameFaction opposingFaction = iPhasingPlayer == iAttackerFaction
-                ? GameState.GetEntity<GameFaction>(iDefenderFaction)
-                : GameState.GetEntity<GameFaction>(iAttackerFaction);
+            (GameFaction playerFaction, GameFaction opposingFaction) = GetFactions();
             GameCadre[] units = CalculateInvolvedCadres();
             (List<GameCadre> unitsAtInitiativeOfCurrentPlayer,
                 List<GameCadre> opposingGroundUnits,
                 List<GameCadre> opposingAirUnits,
                 List<GameCadre> opposingSeaUnits,
                 List<GameCadre> opposingSubUnits) initiativeData = CalculateUnitsAtInitiativeOfCurrentPlayer(units, playerFaction, opposingFaction);
-            UnitType firingUnitType = UnitType.GetModifiedUnitType(GameState.Ruleset.unitTypes[initiative], playerFaction.iTechs);
+
+            UnitType firingUnitType;
+            if (playerFaction == null) firingUnitType = GameState.Ruleset.unitTypes[initiative];
+            else firingUnitType = UnitType.GetModifiedUnitType(GameState.Ruleset.unitTypes[initiative], playerFaction.iTechs);
 
 
             foreach (var playerCadre in initiativeData.unitsAtInitiativeOfCurrentPlayer)
             {
-                CombatRoll combatRoll;
-                GameCadre target;
-                if (combatDiceDistribution.GroundDice > 0)
+                for (int i = 0; i < playerCadre.Pips; i++)
                 {
-                    target = PickTarget(initiativeData.opposingGroundUnits);
-                    int dieRoll = Random.Range(1, 7);
-                    combatRoll = new CombatRoll()
+                    CombatRoll combatRoll;
+                    GameCadre target;
+                    if (combatDiceDistribution.GroundDice > 0)
                     {
-                        UID = _rollUIDTicker,
-                        iDieRoll = dieRoll,
-                        IsHit = dieRoll <= firingUnitType.GroundAttack,
-                        iShooter = playerCadre.ID,
-                        iTarget = target?.ID ?? -1
-                    };
-                    combatDiceDistribution.GroundDice--;
-                }
-                else if (combatDiceDistribution.AirDice > 0)
-                {
-                    target = PickTarget(initiativeData.opposingAirUnits);
-                    int dieRoll = Random.Range(1, 7);
-                    combatRoll = new CombatRoll()
+                        target = PickTarget(initiativeData.opposingGroundUnits);
+                        if (target is null) continue;
+                        int dieRoll = Random.Range(1, 7);
+                        combatRoll = new CombatRoll()
+                        {
+                            UID = _rollUIDTicker,
+                            iDieRoll = dieRoll,
+                            IsHit = dieRoll <= firingUnitType.GroundAttack,
+                            iShooter = playerCadre.ID,
+                            iTarget = target?.ID ?? -1
+                        };
+                        combatDiceDistribution.GroundDice--;
+                    }
+                    else if (combatDiceDistribution.AirDice > 0)
                     {
-                        UID = _rollUIDTicker,
-                        iDieRoll = dieRoll, 
-                        IsHit = dieRoll <= firingUnitType.AirAttack, 
-                        iShooter = playerCadre.ID, 
-                        iTarget = target?.ID ?? -1
-                    };
-                    combatDiceDistribution.AirDice--;
-                }
-                else if (combatDiceDistribution.SeaDice > 0)
-                {
-                    target = PickTarget(initiativeData.opposingSeaUnits);
-                    int dieRoll = Random.Range(1, 7);
-                    combatRoll = new CombatRoll()
+                        target = PickTarget(initiativeData.opposingAirUnits);
+                        if (target is null) continue;
+                        int dieRoll = Random.Range(1, 7);
+                        combatRoll = new CombatRoll()
+                        {
+                            UID = _rollUIDTicker,
+                            iDieRoll = dieRoll,
+                            IsHit = dieRoll <= firingUnitType.AirAttack,
+                            iShooter = playerCadre.ID,
+                            iTarget = target?.ID ?? -1
+                        };
+                        combatDiceDistribution.AirDice--;
+                    }
+                    else if (combatDiceDistribution.SeaDice > 0)
                     {
-                        UID = _rollUIDTicker,
-                        iDieRoll = dieRoll, 
-                        IsHit = dieRoll <= firingUnitType.SeaAttack,
-                        iShooter = playerCadre.ID, 
-                        iTarget = target?.ID ?? -1
-                    };
-                    combatDiceDistribution.SeaDice--;
-                }
-                else if (combatDiceDistribution.SubDice > 0)
-                {
-                    target = PickTarget(initiativeData.opposingSubUnits);
-                    int dieRoll = Random.Range(1, 7);
-                    combatRoll = new CombatRoll()
+                        target = PickTarget(initiativeData.opposingSeaUnits);
+                        if (target is null) continue;
+                        int dieRoll = Random.Range(1, 7);
+                        combatRoll = new CombatRoll()
+                        {
+                            UID = _rollUIDTicker,
+                            iDieRoll = dieRoll,
+                            IsHit = dieRoll <= firingUnitType.SeaAttack,
+                            iShooter = playerCadre.ID,
+                            iTarget = target?.ID ?? -1
+                        };
+                        combatDiceDistribution.SeaDice--;
+                    }
+                    else if (combatDiceDistribution.SubDice > 0)
                     {
-                        UID = _rollUIDTicker,
-                        iDieRoll = dieRoll,
-                        IsHit = dieRoll <= firingUnitType.SubAttack,
-                        iShooter = playerCadre.ID,
-                        iTarget = target?.ID ?? -1
-                    };
-                    combatDiceDistribution.SubDice--;
-                }
-                else throw new InvalidOperationException("Provided dice distribution does not have enough dice selected");
+                        target = PickTarget(initiativeData.opposingSubUnits);
+                        if (target is null) continue;
+                        int dieRoll = Random.Range(1, 7);
+                        combatRoll = new CombatRoll()
+                        {
+                            UID = _rollUIDTicker,
+                            iDieRoll = dieRoll,
+                            IsHit = dieRoll <= firingUnitType.SubAttack,
+                            iShooter = playerCadre.ID,
+                            iTarget = target?.ID ?? -1
+                        };
+                        combatDiceDistribution.SubDice--;
+                    }
+                    else
+                        throw new InvalidOperationException(
+                            "Provided dice distribution does not have enough dice selected");
 
-                _rollUIDTicker++;
-                if (combatRoll.IsHit && target != null) target.TakeHit();
-                CombatRolls.Add(combatRoll);
+                    _rollUIDTicker++;
+                    if (combatRoll.IsHit && target != null) target.TakeHit();
+                    CombatRolls.Add(combatRoll);
+
+                    string hitText = combatRoll.IsHit ? "Hit" : "Miss";
+                    Debug.Log($"Combat Roll: {combatRoll.iDieRoll}/6, {hitText}");
+                }
             }
             
             if (initiativeFiringQueue.TryDequeue(out int iNewPhasingPlayer))
@@ -333,14 +354,61 @@ namespace Game_Logic.TriumphAndTragedy
                 AdvanceInitiativeAndResolve();
             }
         }
+        
+        /// <param name="unitsInCombatIfPrecalculated">Only passed when the units in the combat are already known. If a null value is passed, then it will be recalculated</param>
+        /// <returns>A new <see cref="CombatDiceDistribution"/> following the same rules as a passive/neutral defender</returns>
+        public CombatDiceDistribution GenerateDefaultDiceDistribution(GameCadre[] unitsInCombatIfPrecalculated = null)
+        {
+            if (unitsInCombatIfPrecalculated is null) unitsInCombatIfPrecalculated = CalculateInvolvedCadres();
+            CombatDiceDistribution diceDistribution = new CombatDiceDistribution();
+            (GameFaction phasingFaction, GameFaction opposingFaction) = GetFactions();
+            (List<GameCadre> unitsAtInitiativeOfCurrentPlayer,
+                List<GameCadre> opposingGroundUnits,
+                List<GameCadre> opposingAirUnits,
+                List<GameCadre> opposingSeaUnits,
+                List<GameCadre> opposingSubUnits) initiativeData = CalculateUnitsAtInitiativeOfCurrentPlayer(unitsInCombatIfPrecalculated, phasingFaction, opposingFaction);
+            if (initiativeData.opposingGroundUnits.Count > 0)
+            {
+                diceDistribution.GroundDice = (short)numDiceAvailable;
+            }
+            else if (initiativeData.opposingSeaUnits.Count > 0)
+            {
+                diceDistribution.SeaDice = (short)numDiceAvailable;
+            }
+            else if (initiativeData.opposingAirUnits.Count > 0)
+            {
+                diceDistribution.AirDice = (short)numDiceAvailable;
+            }
+            else if (initiativeData.opposingSubUnits.Count > 0)
+            {
+                diceDistribution.SubDice = (short)numDiceAvailable;
+            }
+            else
+            {
+                Debug.LogError($"There are units opposing the phasing faction");
+            }
 
+            return diceDistribution;
+        }
+        
         void PassToPlayerControl(GameCadre[] units, int iPhasingPlayer)
         {
-            StageCounter++;
-            this.iPhasingPlayer = iPhasingPlayer;
-            DecidingDice = true;
-            numDiceAvailable = CalculateAvailableDice(this.iPhasingPlayer, units);
-            GameState.PushCombatState();
+            numDiceAvailable = CalculateAvailableDice(iPhasingPlayer, units);
+            if (iPhasingPlayer == -1)
+            {
+                // Neutrals
+                Debug.Log("Neutrals firing");
+                CombatDiceDistribution neutralDiceDistribution = GenerateDefaultDiceDistribution(unitsInCombatIfPrecalculated:units);
+                
+                RollCombatAtCurrentInitiative(neutralDiceDistribution);
+            }
+            else
+            {
+                StageCounter++;
+                this.iPhasingPlayer = iPhasingPlayer;
+                DecidingDice = true;
+                GameState.PushCombatState();
+            }
         }
 
         GameCadre PickTarget(List<GameCadre> potentialTargets)
@@ -374,10 +442,13 @@ namespace Game_Logic.TriumphAndTragedy
                         if (potentialTarget.Pips == highestPips)
                             validTargets.Add(potentialTarget);
                     }
-                    return validTargets[Random.Range(0, validTargets.Count)];
+
+                    if (validTargets.Count > 0) return validTargets[Random.Range(0, validTargets.Count)];
+                    else return null;
                 
                 case CombatDamageRule.FullRandom:
-                    return potentialTargets[Random.Range(0, potentialTargets.Count)];
+                    if (potentialTargets.Count > 0) return potentialTargets[Random.Range(0, potentialTargets.Count)];
+                    else return null;
                 
                 default: throw new NotImplementedException();
             }
@@ -391,7 +462,7 @@ namespace Game_Logic.TriumphAndTragedy
             int dice = 0;
             foreach (var cadre in allUnitsInCombat)
             {
-                if (cadre.Faction.ID == iPlayer && cadre.UnitType.IdAndInitiative == initiative && cadre.Pips > 0)
+                if (((cadre.Faction == null && iPlayer == -1) || (cadre.Faction != null && cadre.Faction.ID == iPlayer)) && cadre.UnitType.IdAndInitiative == initiative && cadre.Pips > 0)
                 {
                     dice += cadre.Pips;
                 }
@@ -410,6 +481,9 @@ namespace Game_Logic.TriumphAndTragedy
                 if (cadre.Pips <= 0) 
                     cadre.Kill();
             }
+
+            GameState.EvaluateTerritoryControl();
+            GameState.PushCombatState();
             GameState.ActiveCombat = null;
             if (GameState.CommittedCombats.Count > 0)
             {
@@ -488,37 +562,25 @@ namespace Game_Logic.TriumphAndTragedy
         public int HashFullState(int asPlayer)
         {
             int hash = asPlayer;
-            hash = CombineHashes(hash, CombatUID.GetHashCode());
-            hash = CombineHashes(hash, iTile.GetHashCode());
-            hash = CombineHashes(hash, iAttackerFaction.GetHashCode());
-            hash = CombineHashes(hash, iDefenderFaction.GetHashCode());
-            hash = CombineHashes(hash, initiative.GetHashCode());
-            hash = CombineHashes(hash, iPhasingPlayer.GetHashCode());
-            hash = CombineHashes(hash, DecidingDice.GetHashCode());
-            hash = CombineHashes(hash, ProvidedCombatDiceDistribution.GetHashCode());
+            hash = Hashing.MurmurHash3_Combine(CombatUID, iTile, iAttackerFaction, iDefenderFaction,
+                initiative, iPhasingPlayer);
+            hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(DecidingDice));
+            hash = Hashing.CombineHashes(hash, ProvidedCombatDiceDistribution.HashCode_MurmurHash3);
 
-            foreach (var cadre in iSupportingCadres)
+            foreach (var iCadre in iSupportingCadres)
             {
-                hash = CombineHashes(hash, cadre);
+                hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(iCadre));
             }
 
             if (CombatRolls != null)
             {
                 foreach (var roll in CombatRolls)
                 {
-                    hash = CombineHashes(hash, roll.GetHashCode());
+                    hash = Hashing.CombineHashes(hash, Hashing.MurmurHash3(roll.HashCode_MurmurHash3));
                 }
             }
 
             return hash;
-        }
-
-        private int CombineHashes(int hash, int value)
-        {
-            unchecked
-            {
-                return hash + (value * 17);
-            }
         }
 
         public override bool Equals(object obj)

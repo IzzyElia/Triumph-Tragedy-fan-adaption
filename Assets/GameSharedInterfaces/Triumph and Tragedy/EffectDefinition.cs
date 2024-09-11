@@ -22,7 +22,9 @@ namespace GameSharedInterfaces.Triumph_and_Tragedy
         public Vector3 DestinationBoxPosition;
         public Vector3 DestinationBoxSize;
         public Vector3 NearCameraPosition;
-        
+        public float baseAnimationTime = 3f;
+        public float animationTimePerUnit = 1f;
+
         [Serializable] public struct Effect
         {
             public int MinNumber;

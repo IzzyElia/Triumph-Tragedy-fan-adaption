@@ -1,5 +1,7 @@
 using System;
+using FMODUnity;
 using GameBoard.UI.SpecializeComponents.CombatPanel;
+using GameSharedInterfaces.Triumph_and_Tragedy;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -15,6 +17,8 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
         [NonSerialized] public Vector3 EndPosition;
         [NonSerialized] public bool PlaySound;
         [NonSerialized] public GameObject gun;
+        [NonSerialized] public CombatRoll? CombatRoll;
+        [NonSerialized] public bool IsHit;
         private float _metersToTravel;
 
         public override void OnCreate(CombatPanelEffect combatPanelEffect, CombatAnimationData animationData, AnimationTimeData timeData)
@@ -53,8 +57,17 @@ namespace GameBoard.UI.SpecializedComponents.CombatPanel.Effects
             if (distancedCrossed >= 1f)
             {
                 EffectParticle hit = Instantiate(this.hitParticle).GetComponent<EffectParticle>();
+                hit.GetComponent<StudioEventEmitter>().SetParameter("parameter:/HitStatus", IsHit ? 1 : 0);
                 hit.OnCreate(CombatPanelEffect, AnimationData, timeData);
                 hit.transform.position = transform.position;
+                if (CombatRoll.HasValue && IsHit)
+                {
+                    if (CombatPanelEffect.CombatPanelUnits.TryGetValue(CombatRoll.Value.iTarget, out ICombatPanelUnit combatPanelUnit))
+                    {
+                        // TODO/Note - it's safe to call AnimateHit multiple times. Duplicate hits will be ignored by the combat panel unit
+                        combatPanelUnit.AnimateHit(CombatRoll.Value);
+                    }
+                }
                 Kill();
                 return;
             }

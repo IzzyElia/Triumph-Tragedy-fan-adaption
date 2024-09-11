@@ -18,10 +18,17 @@ namespace GameBoard
         [SerializeField] private SpriteRenderer[] pipRenderers = Array.Empty<SpriteRenderer>();
 
         [SerializeField] private int constructedPips = -1;
+        private bool _constructed = false;
+        private static bool _loadedResources = false;
+        private static Sprite pipSprite;
+        private static Material pipMaterial;
         public void Rebuild()
         {
-            Sprite pipSprite = Resources.Load<Sprite>("Icons/Misc/Pip");
-            Material pipMaterial = Resources.Load<Material>("Shaders/PipMaterial");
+            if (!_loadedResources)
+            {
+                pipSprite = Resources.Load<Sprite>("Icons/Misc/Pip");
+                pipMaterial = Resources.Load<Material>("Shaders/PipMaterial");
+            }
             
             constructedPips = maxPips;
             
@@ -55,12 +62,12 @@ namespace GameBoard
                 spriteRenderer.enabled = false;
             }
 
-            
-            Refresh();
+            _constructed = true;
         }
 
-        void Refresh()
+        public void Refresh()
         {
+            if (!_constructed || constructedPips != maxPips) Rebuild();
             for (int i = 0; i < constructedPips; i++)
             {
                 if (i < pips)
@@ -99,7 +106,7 @@ namespace GameBoard
         public void SetMaxPips(int maxPips)
         {
             this.maxPips = maxPips;
-            Rebuild();
+            Refresh();
         }
     }
 }
